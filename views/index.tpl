@@ -70,7 +70,7 @@
 			    <p class="description">
 			    	It's docker registry With Beego Framework.
 			    <br />
-			    	Official website: <a href="http://{{.Website}}">{{.Website}}</a>
+			    	Official website: <a href="https://github.com/dockboard/docker-registry">{{.Website}}</a>
 			    <br />
 			    	Contact me: {{.Email}}
 			    </p>
