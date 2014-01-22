@@ -2,7 +2,7 @@
 
 <html>
   	<head>
-    	<title>Beego</title>
+    	<title>{{.Website}}</title>
     	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	
 		<style type="text/css">
@@ -66,9 +66,9 @@
 			<div class="container">
 			<div class="row">
 			  <div class="hero-text">
-			    <h1>Welcome to Beego!</h1>
+			    <h1>Welcome to Docker Registry!</h1>
 			    <p class="description">
-			    	Beego is a simple & powerful Go web framework which is inspired by tornado and sinatra.
+			    	It's docker registry With Beego Framework.
 			    <br />
 			    	Official website: <a href="http://{{.Website}}">{{.Website}}</a>
 			    <br />
