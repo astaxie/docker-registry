@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "docker-registry/routers"
-	"github.com/astaxie/beego"
+  "github.com/astaxie/beego"
+  _ "github.com/docker-registry/routers"
 )
 
 func main() {
-	beego.Run()
+  beego.Run()
 }
