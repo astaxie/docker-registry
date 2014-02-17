@@ -1,0 +1,5 @@
+[target]
+path=docker-registry
+
+[deps]
+github.com/astaxie/beego=tag:v1.1.0
