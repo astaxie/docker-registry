@@ -7,4 +7,7 @@ import (
 
 func init() {
   beego.Router("/", &controllers.MainController{})
+  //Status
+  beego.Router("/_ping", &controllers.PingController{})
+  beego.Router("/v1/_ping", &controllers.PingController{})
 }
