@@ -1,8 +1,7 @@
-docker-registry
+docker-registry [![Build Status](https://drone.io/github.com/dockboard/docker-registry/status.png)](https://drone.io/github.com/dockboard/docker-registry/latest)
 ===============
 
 The [docker-registry](https://github.com/dockboard/docker-registry) is a [Golang](http://golang.org) version with [Beego](http://beego.me) and [Qiniu](http://qiniu.com).
-
 
 Build
 =====
