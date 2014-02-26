@@ -12,6 +12,9 @@ type PingResult struct {
   Result bool
 }
 
+// GET /_ping or /v1/_ping
+// API Spec GET /_ping http://docs.docker.io/en/latest/reference/api/registry_api
+// Section 2.4 Status
 func (this *PingController) Get() {
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", "0.6.0")
   pingResult := PingResult{Result: true}
