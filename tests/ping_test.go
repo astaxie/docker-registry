@@ -27,8 +27,16 @@ func TestV1Ping(t *testing.T) {
         So(found, ShouldEqual, true)
       }
     })
-    Convey("The X-Docker-Registry-Version Should Be 0.6.0", func() {
-      So(w.Header()["X-Docker-Registry-Version"], ShouldContain, "0.6.0")
+    Convey("The X-Docker-Registry-Version Should Be 0.6.5", func() {
+      So(w.Header()["X-Docker-Registry-Version"], ShouldContain, "0.6.5")
+    })
+    Convey("The X-Docker-Registry-Standalone Should Be Exist", func() {
+      if _, found := w.Header()["X-Docker-Registry-Standalone"]; found {
+        So(found, ShouldEqual, true)
+      }
+    })
+    Convey("The X-Docker-Registry-Standalone Should Be True", func() {
+      So(w.Header()["X-Docker-Registry-Standalone"], ShouldContain, "true")
     })
     Convey("The Result of _ping is JSON format", func() {
       body := make(map[string]interface{})
@@ -67,8 +75,16 @@ func Test_Ping(t *testing.T) {
         So(found, ShouldEqual, true)
       }
     })
-    Convey("The X-Docker-Registry-Version Should Be 0.6.0", func() {
-      So(w.Header()["X-Docker-Registry-Version"], ShouldContain, "0.6.0")
+    Convey("The X-Docker-Registry-Version Should Be 0.6.5", func() {
+      So(w.Header()["X-Docker-Registry-Version"], ShouldContain, "0.6.5")
+    })
+    Convey("The X-Docker-Registry-Standalone Should Be Exist", func() {
+      if _, found := w.Header()["X-Docker-Registry-Standalone"]; found {
+        So(found, ShouldEqual, true)
+      }
+    })
+    Convey("The X-Docker-Registry-Standalone Should Be True", func() {
+      So(w.Header()["X-Docker-Registry-Standalone"], ShouldContain, "true")
     })
     Convey("The Result of _ping is JSON format", func() {
       body := make(map[string]interface{})
