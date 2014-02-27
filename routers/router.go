@@ -10,4 +10,6 @@ func init() {
   //Status
   beego.Router("/_ping", &controllers.PingController{})
   beego.Router("/v1/_ping", &controllers.PingController{})
+  //Users
+  beego.Router("/users", &controllers.UsersController{})
 }
