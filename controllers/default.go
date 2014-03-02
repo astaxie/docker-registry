@@ -9,7 +9,5 @@ type MainController struct {
 }
 
 func (this *MainController) Get() {
-	this.Data["Website"] = "Docker Registry"
-	this.Data["Email"] = "genedna@gmail.com"
-	this.TplNames = "index.tpl"
+	this.Ctx.Output.Body([]byte("Docker Registry"))
 }
