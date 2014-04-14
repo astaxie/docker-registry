@@ -33,4 +33,7 @@ func init() {
 	beego.Router("/v1/images/:image_id/files", &controllers.ImageController{}, "get:GETFiles")
 	//Search
 	beego.Router("/v1/search", &controllers.SearchController{})
+	//Status
+	beego.Router("/_status", &controllers.StatusController{})
+	beego.Router("/v1/_status", &controllers.StatusController{})
 }
