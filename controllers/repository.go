@@ -32,3 +32,43 @@ func (this *RepositoryController) DELETERepositoryImages() {
 func (this *RepositoryController) PUTRepositoryAuth() {
 
 }
+
+func (this *RepositoryController) PUTProperties() {
+
+}
+
+func (this *RepositoryController) GETProperties() {
+
+}
+
+func (this *RepositoryController) GETTags() {
+
+}
+
+func (this *RepositoryController) GETTag() {
+
+}
+
+func (this *RepositoryController) GETRepositoyJSON() {
+
+}
+
+func (this *RepositoryController) GETTagJSON() {
+
+}
+
+func (this *RepositoryController) PUTTag() {
+
+}
+
+func (this *RepositoryController) DELETETag() {
+
+}
+
+func (this *RepositoryController) DELETERepository() {
+
+}
+
+func (this *RepositoryController) DELETERepositoryTags() {
+
+}
