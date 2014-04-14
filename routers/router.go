@@ -31,4 +31,6 @@ func init() {
 	beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "put:PUTJSON")
 	beego.Router("/v1/private_images/:image_id/files", &controllers.ImageController{}, "get:GETPrivateFiles")
 	beego.Router("/v1/images/:image_id/files", &controllers.ImageController{}, "get:GETFiles")
+	//Search
+	beego.Router("/v1/search", &controllers.SearchController{})
 }
