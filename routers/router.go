@@ -5,14 +5,13 @@ import (
 	"github.com/docker-registry/controllers"
 )
 
+//
+// Registry APIs http://docs.docker.io/en/latest/reference/api/registry_api/
+// Index APIs http://docs.docker.io/en/latest/reference/api/index_api/
+//
 func init() {
-	//
-	// Registry APIs http://docs.docker.io/en/latest/reference/api/registry_api/
-  //
-
-	// Index Page
+	// Index
 	beego.Router("/", &controllers.MainController{})
-
   // http://docs.docker.io/en/latest/reference/api/registry_api/#images
   // Documented and implemented in docker-registry
   beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "get:GETLayer")
@@ -28,7 +27,6 @@ func init() {
   beego.Router("/v1/private_images/:image_id/layer", &controllers.ImageController{}, "get:GETPrivateLayer")
   beego.Router("/v1/private_images/:image_id/json", &controllers.ImageController{}, "get:GETPrivateJSON")
   beego.Router("/v1/private_images/:image_id/files", &controllers.ImageController{}, "get:GETPrivateFiles")
-
   // http://docs.docker.io/en/latest/reference/api/registry_api/#tags
   // Documented and implemented in docker-registry
   beego.Router("/v1/repositories/:username/:repository/tags", &controllers.RepositoryController{}, "get:GETTags")
@@ -56,7 +54,6 @@ func init() {
   // Undocumented but implemented in docker-registry and docker-index
   beego.Router("/v1/repositories/:username/:repository/tags/:tag/json", &controllers.RepositoryController{}, "get:GETTagJSON")  
   beego.Router("/v1/repositories/:username/:repository/tags", &controllers.RepositoryController{}, "delete:DELETERepositoryTags")
-
   // http://docs.docker.io/en/latest/reference/api/registry_api/#status
   // Documented and implemented in docker-registry
   beego.Router("/_ping", &controllers.PingController{})
@@ -64,7 +61,6 @@ func init() {
   // Undocumented but implemented in docker-registry
   beego.Router("/_status", &controllers.StatusController{})
   beego.Router("/v1/_status", &controllers.StatusController{})
-
   // http://docs.docker.io/en/latest/reference/api/index_api/#user-login
   // Documented and implemented in docker-index
   beego.Router("/users", &controllers.UsersController{}, "get:GETUsers")
@@ -72,7 +68,6 @@ func init() {
   beego.Router("/users/", &controllers.UsersController{}, "get:GETUsers")
   beego.Router("/users/", &controllers.UsersController{}, "post:POSTUsers")   
   beego.Router("/users/:username", &controllers.UsersController{}, "put:PUTUsers")
-
   // http://docs.docker.io/en/latest/reference/api/index_api/#search
   // Documented and implemented in docker-index  
 	beego.Router("/v1/search", &controllers.SearchController{})	
