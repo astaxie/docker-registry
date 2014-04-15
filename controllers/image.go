@@ -52,3 +52,7 @@ func (this *ImageController) GETPrivateFiles() {
 func (this *ImageController) GETFiles() {
 
 }
+
+func (this *ImageController) GETDiff() {
+	
+}

@@ -28,8 +28,6 @@ Why image file named layer?
 In Docker terminology, a read-only [Layer](http://docs.docker.io/en/latest/terms/layer/#layer-def) is called an image. An image never changes.
 
 
-What's docker 
-
 How to build?
 =============
 
@@ -45,8 +43,6 @@ Build commands:
 
 ```
 gopm build 
-#or
-gopm build -v
 ```
 
 How to Deploy?
