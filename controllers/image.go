@@ -105,6 +105,10 @@ func (this *ImageController) PUTLayer() {
 //     },
 //     docker_version: "0.1.7"
 // }
+// Status Codes: 
+//    200 – OK
+//    401 – Requires authorization
+//    404 – Image not found
 func (this *ImageController) GETJSON() {
 
 }
