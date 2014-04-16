@@ -18,8 +18,7 @@ func (this *PingController) Prepare() {
 }
 
 // GET /_ping or /v1/_ping
-// API Spec GET /_ping http://docs.docker.io/en/latest/reference/api/registry_api
-// Section 2.4 Status
+// API Spec GET /_ping http://docs.docker.io/en/latest/reference/api/registry_api/#status
 // Every 'docker pull' or 'docker push' command will access /v1/_ping before access other URLs.
 // The docker client call at docker/registry/registry.go@pingRegistryEndpoint function.
 // if 'X-Docker-Registry-Version' is blank, the docker client function will return error.

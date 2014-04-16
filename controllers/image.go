@@ -190,7 +190,7 @@ func (this *ImageController) GETAncestry() {
 }
 
 // Undocumented API
-// 根据官方 docker-registry 的 checksum 方法分析：
+// 根据官方 docker-registry 的 put_image_checksum 方法分析：
 // 检查 HTTP HEADER 的 Docker Client 版本：
 //     如果是 0.10 版本从 X-Docker-Checksum-Payload 读取 checksum 值
 //     如果是 0.10 以前的版本从 X-Docker-Checksum 读取 checksum 值
@@ -204,6 +204,13 @@ func (this *ImageController) PUTChecksum() {
 
 }
 
+// Undocumented API
+// 根据官方 docker-registry 的 get_image_files 方法分析：
+func (this *ImageController) GETFiles() {
+
+}
+
+// Undocumented API 
 func (this *ImageController) GETPrivateLayer() {
 
 }
@@ -217,9 +224,7 @@ func (this *ImageController) GETPrivateFiles() {
 
 }
 
-func (this *ImageController) GETFiles() {
 
-}
 
 func (this *ImageController) GETDiff() {
 	
