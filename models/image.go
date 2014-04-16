@@ -1,42 +1,20 @@
 package models
 
 import (
+	"bufio"
+	"crypto/sha256"
 	"errors"
 	"github.com/astaxie/beego"
+	"github.com/dotcloud/docker/utils"
 	"io/ioutil"
 	"os"
 	"syscall"
-	"unicode/utf16"
 )
 
 type Image struct {
 	ImageId           string
 	ImageJsonData     string
 	ImageJsonLayerUri string
-}
-
-//{
-//	"comment": "Imported from http://get.docker.io/images/base",
-//	"container_config": {
-//		"Tty": false,
-//		"Cmd": null,
-//		"MemorySwap": 0,
-//		"Image": "",
-//		"Hostname": "",
-//		"User": "",
-//		"Env": null,
-//		"Memory": 0,
-//		"Detach": false,
-//		"Ports": null,
-//		"OpenStdin": false
-//	},
-//	"id": "27cf784147099545",
-//	"created": "2013-03-23T12:53:11.10432-07:00"
-//}
-
-//字符串转换来unit16，移动文件时需要！
-func StringToUTF16(s string) []uint16 {
-	return utf16.Encode([]rune(s + "\x00"))
 }
 
 //确认有_checksum 有_checksum并且文件长度为71 才代表这个image是完整的
@@ -61,6 +39,14 @@ func (this *Image) writeJsonData(JsonData string) error {
 	jsonFileName := beego.AppConfig.String("RegistryPath") + this.ImageId + "/json"
 	jsonSlices := []byte(JsonData)
 	err := ioutil.WriteFile(jsonFileName, jsonSlices, os.ModeAppend)
+	return err
+}
+
+//写入checksum的数据
+func (this *Image) writeChecksumData(ChecksumData string) error {
+	checksumFileName := beego.AppConfig.String("RegistryPath") + this.ImageId + "/_checksum"
+	checksumSlices := []byte(ChecksumData)
+	err := ioutil.WriteFile(checksumFileName, checksumSlices, os.ModeAppend)
 	return err
 }
 
@@ -98,9 +84,42 @@ func (this *Image) SetImageLayerDataPathById(ImageLayerDataPath string) error {
 	return err
 }
 
-func (this *Image) GetImageLayerChecksumById(ImageLayerId string) (string, error) {
-	return "", nil
+//外部通过此方法，获取Image(Model)Layer的checksum
+func (this *Image) GetImageLayerChecksumById() (string, error) {
+	fi, err := os.Open(beego.AppConfig.String("RegistryPath") + this.ImageId + "/_checksum")
+	if err != nil {
+		panic(err)
+	}
+	defer fi.Close()
+	fd, err := ioutil.ReadAll(fi)
+	return string(fd), err
 }
-func (this *Image) SetImageLayerChecksumById(ImageLayerId string, ImageLayerChecksum string) (string, error) {
-	return "", nil
+
+//外部通过此方法，让Image(Model)计算Layer的checksum并对比传出的ImageLayerChecksum
+func (this *Image) SetImageLayerChecksumById(ImageLayerPayloadChecksum string) (Checksum string, ChecksumPayload string, err error) {
+
+	layerFilePath := beego.AppConfig.String("RegistryPath") + this.ImageId + "/layer"
+	var fileBufioReader *bufio.Reader
+
+	layerFile, layerFileErr := os.Open(layerFilePath)
+	if layerFileErr != nil {
+		return "", "", layerFileErr
+	} else {
+		fileBufioReader = bufio.NewReader(layerFile)
+		tarsumLayer := &utils.TarSum{Reader: fileBufioReader}
+
+		h := sha256.New()
+		imageJsonString, _ := this.GetImageJsonDataById()
+		h.Write([]byte(imageJsonString))
+		h.Write([]byte{'\n'})
+
+		checksumLayer := &utils.CheckSum{Reader: fileBufioReader, Hash: h}
+		checksumPayload := "sha256:" + checksumLayer.Sum()
+		if checksumPayload != ImageLayerPayloadChecksum {
+			return tarsumLayer.Sum([]byte(imageJsonString)), checksumPayload, errors.New("X-Docker-Checksum-Payload not consistent")
+		} else {
+			this.writeChecksumData(checksumPayload)
+			return tarsumLayer.Sum([]byte(imageJsonString)), checksumPayload, nil
+		}
+	}
 }
