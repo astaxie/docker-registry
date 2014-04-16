@@ -190,6 +190,7 @@ func (this *ImageController) GETAncestry() {
 }
 
 // Undocumented API
+// GET /v1/images/(image_id)/checksum
 // 根据官方 docker-registry 的 put_image_checksum 方法分析：
 // 检查 HTTP HEADER 的 Docker Client 版本：
 //     如果是 0.10 版本从 X-Docker-Checksum-Payload 读取 checksum 值
@@ -205,27 +206,61 @@ func (this *ImageController) PUTChecksum() {
 }
 
 // Undocumented API
-// 根据官方 docker-registry 的 get_image_files 方法分析：
+// GET /v1/images/(image_id)/files
+// 根据官方 docker-registry 的 get_image_files 方法和 get_image_files_json 方法分析：
+// return json file listing for given image id
+//    Download the specified layer and determine the file contents.
+//    Alternatively, process a passed in file-object containing the
+//    layer data.
+// Status Codes: 
+//    200 – OK
+//    400 – 如果 layer 文件不是支持的 tar 类型
+//    404 – Image not found
 func (this *ImageController) GETFiles() {
 
 }
 
-// Undocumented API 
+// Undocumented API
+// GET /v1/images/:image_id/diff
+// 根据官方 docker-registry 的 get_image_diff 方法和 get_image_diff_json 方法分析：
+//
+// get json describing file differences in layer
+//    Calculate the diff information for the files contained within
+//    the layer. Return a dictionary of lists grouped by whether they
+//    were deleted, changed or created in this layer.
+//
+//    To determine what happened to a file in a layer we walk backwards
+//    through the ancestry until we see the file in an older layer. Based
+//    on whether the file was previously deleted or not we know whether
+//    the file was created or modified. If we do not find the file in an
+//    ancestor we know the file was just created.
+//
+//        - File marked as deleted by union fs tar: DELETED
+//        - Ancestor contains non-deleted file:     CHANGED
+//        - Ancestor contains deleted marked file:  CREATED
+//        - No ancestor contains file:              CREATED
+// Status Codes: 
+//    200 – OK
+//    400 – 如果 layer 文件不是支持的 tar 类型
+//    404 – Image not found
+func (this *ImageController) GETDiff() {
+  
+}
+
+// Undocumented API
+// GET /v1/private_images/(image_id)/layer
 func (this *ImageController) GETPrivateLayer() {
 
 }
 
+// Undocumented API
+// GET /v1/private_images/(image_id)/json
 func (this *ImageController) GETPrivateJSON() {
 
 }
 
-
+// Undocumented API
+// GET /v1/private_images/(image_id)/files
 func (this *ImageController) GETPrivateFiles() {
 
-}
-
-
-
-func (this *ImageController) GETDiff() {
-	
 }
