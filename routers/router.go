@@ -40,7 +40,7 @@ func init() {
   beego.Router("/v1/repositories/:username/:repository/images", &controllers.RepositoryController{}, "delete:DELETERepositoryImages")
   beego.Router("/v1/repositories/:username/:repository/properties", &controllers.RepositoryController{}, "put:PUTProperties")
   beego.Router("/v1/repositories/:username/:repository/properties", &controllers.RepositoryController{}, "get:GETProperties")
-  beego.Router("/v1/repositories/:username/:repository/json", &controllers.RepositoryController{}, "get:GETRepositoyJSON")
+  beego.Router("/v1/repositories/:username/:repository/json", &controllers.RepositoryController{}, "get:GETRepositoryJSON")
   // http://docs.docker.io/en/latest/reference/api/index_api/#repository
   // Documented and implemented in docker-index
   beego.Router("/v1/repositories/:username/:repository", &controllers.RepositoryController{}, "put:PUTRepository")

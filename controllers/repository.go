@@ -155,51 +155,174 @@ func (this *RepositoryController) DELETERepositoryImages() {
 }
 
 // http://docs.docker.io/en/latest/reference/api/index_api/#repository
-
+// Create a user repository with the given namespace and repo_name.
+// Example Request: 
+//    PUT /v1/repositories/foo/bar/ HTTP/1.1
+//    Host: index.docker.io
+//    Accept: application/json
+//    Content-Type: application/json
+//    Authorization: Basic akmklmasadalkm==
+//    X-Docker-Token: true
+//    [{"id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f"}]
+// Parameters:
+//    namespace – the namespace for the repo
+//    repo_name – the name for the repo
+// Example Response:
+//    HTTP/1.1 200
+//    Vary: Accept
+//    Content-Type: application/json
+//    WWW-Authenticate: Token signature=123abc,repository="foo/bar",access=write
+//    X-Docker-Token: signature=123abc,repository="foo/bar",access=write
+//    X-Docker-Endpoints: registry-1.docker.io [, registry-2.docker.io]
+//    ""
+// Status Codes:
+//    200 – Created
+//    400 – Errors (invalid json, missing or invalid fields, etc)
+//    401 – Unauthorized
+//    403 – Account is not Active
 func (this *RepositoryController) PUTRepository() {
 
 }
 
-func (this *RepositoryController) PUTRepositoryImages() {
-
-}
-
-func (this *RepositoryController) GETRepositoryImages() {
-
-}
-
-
-
-func (this *RepositoryController) PUTRepositoryAuth() {
-
-}
-
-func (this *RepositoryController) PUTProperties() {
-
-}
-
-func (this *RepositoryController) GETProperties() {
-
-}
-
-
-
-func (this *RepositoryController) GETRepositoyJSON() {
-
-}
-
-func (this *RepositoryController) GETTagJSON() {
-
-}
-
-
-
-
-
+// http://docs.docker.io/en/latest/reference/api/index_api/#repository
+// DELETE /v1/repositories/(namespace)/(repo_name)/
+// Delete a user repository with the given namespace and repo_name.
+// Example Request:
+//    DELETE /v1/repositories/foo/bar/ HTTP/1.1
+//    Host: index.docker.io
+//    Accept: application/json
+//    Content-Type: application/json
+//    Authorization: Basic akmklmasadalkm==
+//    X-Docker-Token: true
+//    ""
+// Parameters:
+//    namespace – the namespace for the repo
+//    repo_name – the name for the repo
+// Example Response:
+//    HTTP/1.1 202
+//    Vary: Accept
+//    Content-Type: application/json
+//    WWW-Authenticate: Token signature=123abc,repository="foo/bar",access=delete
+//    X-Docker-Token: signature=123abc,repository="foo/bar",access=delete
+//    X-Docker-Endpoints: registry-1.docker.io [, registry-2.docker.io]
+//    ""
+// Status Codes:
+//    200 – Deleted
+//    202 – Accepted
+//    400 – Errors (invalid json, missing or invalid fields, etc)
+//    401 – Unauthorized
+//    403 – Account is not Active
 func (this *RepositoryController) DELETERepository() {
 
 }
 
+// http://docs.docker.io/reference/api/index_api/#repository-images
+// PUT /v1/repositories/(namespace)/(repo_name)/images
+// Update the images for a user repo.
+// Example Request:
+//    PUT /v1/repositories/foo/bar/images HTTP/1.1
+//    Host: index.docker.io
+//    Accept: application/json
+//    Content-Type: application/json
+//    Authorization: Basic akmklmasadalkm==
+//    [
+//      {
+//        "id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f",
+//        "checksum": "b486531f9a779a0c17e3ed29dae8f12c4f9e89cc6f0bc3c38722009fe6857087"
+//      }
+//    ]
+// Parameters:
+//    namespace – the namespace for the repo
+//    repo_name – the name for the repo
+// Example Response:
+//    HTTP/1.1 204
+//    Vary: Accept
+//    Content-Type: application/json
+//    ""
+// Status Codes:
+//    204 – Created
+//    400 – Errors (invalid json, missing or invalid fields, etc)
+//    401 – Unauthorized
+//    403 – Account is not Active or permission denied
+func (this *RepositoryController) PUTRepositoryImages() {
+
+}
+
+// http://docs.docker.io/reference/api/index_api/#repository-images
+// GET /v1/repositories/(namespace)/(repo_name)/images
+// get the images for a user repo.
+// Example Request:
+//    GET /v1/repositories/foo/bar/images HTTP/1.1
+//    Host: index.docker.io
+//    Accept: application/json
+// Parameters:
+//    namespace – the namespace for the repo
+//    repo_name – the name for the repo
+// Example Response:
+//    HTTP/1.1 200
+//    Vary: Accept
+//    Content-Type: application/json
+//     [{"id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f",
+//     "checksum": "b486531f9a779a0c17e3ed29dae8f12c4f9e89cc6f0bc3c38722009fe6857087"},
+//     {"id": "ertwetewtwe38722009fe6857087b486531f9a779a0c1dfddgfgsdgdsgds",
+//     "checksum": "34t23f23fc17e3ed29dae8f12c4f9e89cc6f0bsdfgfsdgdsgdsgerwgew"}]
+// Status Codes:
+//    200 – OK
+//    404 – Not found
+func (this *RepositoryController) GETRepositoryImages() {
+
+}
+
+// http://docs.docker.io/reference/api/index_api/#repository-authorization
+// PUT /v1/repositories/(namespace)/(repo_name)/auth
+// authorize a token for a user repo
+// Example Request:
+//    PUT /v1/repositories/foo/bar/auth HTTP/1.1
+//    Host: index.docker.io
+//    Accept: application/json
+//    Authorization: Token signature=123abc,repository="foo/bar",access=write
+// Parameters:
+//    namespace – the namespace for the repo
+//    repo_name – the name for the repo
+// Example Response:
+//    HTTP/1.1 200
+//    Vary: Accept
+//    Content-Type: application/json
+//    "OK"
+// Status Codes:
+//    200 – OK
+//    403 – Permission denied
+//    404 – Not found
+func (this *RepositoryController) PUTRepositoryAuth() {
+
+}
+
+// Undocumented API
+// PUT /v1/repositories/:username/:repository/properties
+func (this *RepositoryController) PUTProperties() {
+
+}
+
+// Undocumented API
+// GET /v1/repositories/:username/:repository/properties
+func (this *RepositoryController) GETProperties() {
+
+}
+
+// Undocumented API
+// GET /v1/repositories/:username/:repository/json
+func (this *RepositoryController) GETRepositoryJSON() {
+
+}
+
+// Undocumented API
+// GET /v1/repositories/:username/:repository/tags/:tag/json
+func (this *RepositoryController) GETTagJSON() {
+
+}
+
+// Undocumented API
+// DELETE /v1/repositories/:username/:repository/tags/:tag/json
 func (this *RepositoryController) DELETERepositoryTags() {
 
 }
