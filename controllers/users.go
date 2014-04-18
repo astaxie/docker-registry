@@ -13,7 +13,7 @@ func (this *UsersController) Prepare() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Standalone", beego.AppConfig.String("Standalone"))
 }
 
-// http://docs.docker.io/en/latest/reference/api/index_api/#user
+// http://docs.docker.io/en/latest/reference/api/index_api/#users
 // GET /users
 // GET /users/
 // If you want to check your login, you can try this endpoint
@@ -35,7 +35,7 @@ func (this *UsersController) GETUsers() {
 	this.Ctx.Output.Body([]byte("\"OK\""))
 }
 
-// http://docs.docker.io/en/latest/reference/api/index_api/#user
+// http://docs.docker.io/en/latest/reference/api/index_api/#users
 // POST /users
 // POST /users/
 // Registering a new account.
@@ -65,7 +65,7 @@ func (this *UsersController) POSTUsers() {
 
 }
 
-// http://docs.docker.io/en/latest/reference/api/index_api/#user
+// http://docs.docker.io/en/latest/reference/api/index_api/#users
 // PUT /v1/users/(username)/
 // Change a password or email address for given user. If you pass in an email, it will add it to your account, it will not remove the old one. Passwords will be updated.
 // It is up to the client to verify that that password that is sent is the one that they want. Common approach is to have them type it twice.
