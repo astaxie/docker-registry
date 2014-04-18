@@ -63,11 +63,11 @@ func init() {
   beego.Router("/v1/_status", &controllers.StatusController{})
   // http://docs.docker.io/en/latest/reference/api/index_api/#user-login
   // Documented and implemented in docker-index
-  beego.Router("/users", &controllers.UsersController{}, "get:GETUsers")
-  beego.Router("/users", &controllers.UsersController{}, "post:POSTUsers")
-  beego.Router("/users/", &controllers.UsersController{}, "get:GETUsers")
-  beego.Router("/users/", &controllers.UsersController{}, "post:POSTUsers")   
-  beego.Router("/users/:username", &controllers.UsersController{}, "put:PUTUsers")
+  beego.Router("/v1/users", &controllers.UsersController{}, "get:GETUsers")
+  beego.Router("/v1/users", &controllers.UsersController{}, "post:POSTUsers")
+  beego.Router("/v1/users/", &controllers.UsersController{}, "get:GETUsers")
+  beego.Router("/v1/users/", &controllers.UsersController{}, "post:POSTUsers")   
+  beego.Router("/v1/users/:username", &controllers.UsersController{}, "put:PUTUsers")
   // http://docs.docker.io/en/latest/reference/api/index_api/#search
   // Documented and implemented in docker-index  
 	beego.Router("/v1/search", &controllers.SearchController{})	

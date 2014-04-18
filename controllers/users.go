@@ -1,3 +1,13 @@
+// Docker Registry & Login
+// 执行 docker login 命令流程：
+//     1. docker 向 registry 的服务器进行注册执行：POST /v1/users or /v1/users/ -> POSTUsers()
+//     2. 创建用户成功返回 201；提交的格式有误、无效的字段等返回 400；已经存在用户了返回 401。
+//     3. docker login 收到 401 的状态后，进行登录：GET /v1/users or /v1/users/ -> GETUsers()
+//     4. 在登录时，将用户名和密码进行 SetBasicAuth 处理，放到 HEADER 的 Authorization 中，例如：Authorization: Basic ZnNrOmZzaw==
+//     5. registry 收到登录的请求，Decode 请求 HEADER 中 Authorization 的部分进行判断。
+//     6. 用户名和密码正确返回 200；用户名密码错误返回 401；账户未激活返回 403 错误；其它错误返回 500。
+// 注：
+//     Decode HEADER authorization function named decodeAuth in https://github.com/dotcloud/docker/blob/master/registry/auth.go.
 package controllers
 
 import (
@@ -36,8 +46,8 @@ func (this *UsersController) GETUsers() {
 }
 
 // http://docs.docker.io/en/latest/reference/api/index_api/#users
-// POST /users
-// POST /users/
+// POST /v1/users
+// POST /v1/users/
 // Registering a new account.
 // Example request:
 //    POST /v1/users HTTP/1.1
@@ -61,6 +71,7 @@ func (this *UsersController) GETUsers() {
 // Status Codes: 
 //    201 – User Created
 //    400 – Errors (invalid json, missing or invalid fields, etc)
+//    401 - 已经存在此用户
 func (this *UsersController) POSTUsers() {
 
 }
