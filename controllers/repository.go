@@ -9,8 +9,10 @@ type RepositoryController struct {
 }
 
 func (this *RepositoryController) Prepare() {
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", beego.AppConfig.String("Version"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Standalone", beego.AppConfig.String("Standalone"))
+  //TODO Generate token & read endpoints from beego.AppConfig.String("Endpoints")
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", "")
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", "")
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", "")
 }
 
 // http://docs.docker.io/en/latest/reference/api/registry_api/#tags
