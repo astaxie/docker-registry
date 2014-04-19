@@ -8,6 +8,12 @@
 //     6. 用户名和密码正确返回 200；用户名密码错误返回 401；账户未激活返回 403 错误；其它错误返回 500。
 // 注：
 //     Decode HEADER authorization function named decodeAuth in https://github.com/dotcloud/docker/blob/master/registry/auth.go.
+// 更新 Docker Registry User 的属性：
+//     1. 调用 PUT /v1/users/(username)/ 向服务器更新 User 的 Email 和 Password 属性。
+//     2. 参数包括 User Email 或 User Password，或两者都包括。
+//     3. 更新成功返回 204；传递的参数不是有效的 JSON 格式等错误返回 400；认证失败返回 401；用户没有激活返回 403；没有用户现实 404。
+// 注：
+//     HTTP HEADER authorization decode 验证同 docker login 命令。
 package controllers
 
 import (
