@@ -13,48 +13,10 @@ func (this *ImageController) Prepare() {
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Standalone", beego.AppConfig.String("Standalone"))
 }
 
-// http://docs.docker.io/en/latest/reference/api/registry_api/#layer
-// GET /v1/images/(image_id)/layer
-// Get image layer for a given image_id
-// 读取 image 的 layer ：local 存储时读取 /registry/images/(image_id)/layer 文件；第三方存储时重定向到第三方存储文件的 URL。
-// Example Request:
-//    GET /v1/images/088b4505aa3adc3d35e79c031fa126b403200f02f51920fbd9b7c503e87c7a2c/layer HTTP/1.1
-//    Host: registry-1.docker.io
-//    Accept: application/json
-//    Content-Type: application/json
-// Example Response:
-//    HTTP/1.1 200
-//    Vary: Accept
-//    X-Docker-Registry-Version: 0.6.0
-//    Cookie: (Cookie provided by the Registry)
-//    {layer binary data stream}
-// Status Codes: 
-//    200 – OK
-//    401 – Requires authorization
-//    404 – Image not found
 func (this *ImageController) GETLayer() {
 
 }
 
-// http://docs.docker.io/en/latest/reference/api/registry_api/#layer
-// Put image layer for a given image_id
-// 写入 image 的 layer ：local 存储时写入 /registry/images/(image_id)/layer 文件；第三方存储时保存到第三方的存储空间。
-// Example Request:
-//    PUT /v1/images/088b4505aa3adc3d35e79c031fa126b403200f02f51920fbd9b7c503e87c7a2c/layer HTTP/1.1
-//    Host: registry-1.docker.io
-//    Transfer-Encoding: chunked
-//    Authorization: Token signature=123abc,repository="foo/bar",access=write
-//    {layer binary data stream}
-// Example Response:
-//    HTTP/1.1 200
-//    Vary: Accept
-//    Content-Type: application/json
-//    X-Docker-Registry-Version: 0.6.0
-//    ""
-// Status Codes: 
-//    200 – OK
-//    401 – Requires authorization
-//    404 – Image not found
 func (this *ImageController) PUTLayer() {
 
 }
@@ -105,7 +67,7 @@ func (this *ImageController) PUTLayer() {
 //     },
 //     docker_version: "0.1.7"
 // }
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    401 – Requires authorization
 //    404 – Image not found
@@ -159,7 +121,7 @@ func (this *ImageController) GETJSON() {
 //    Content-Type: application/json
 //    X-Docker-Registry-Version: 0.6.0
 //    ""
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    401 – Requires authorization
 func (this *ImageController) PUTJSON() {
@@ -185,7 +147,7 @@ func (this *ImageController) PUTJSON() {
 //     "aeee63968d87c7da4a5cf5d2be6bee4e21bc226fd62273d180a49c96c62e4543",
 //     "bfa4c5326bc764280b0863b46a4b20d940bc1897ef9c1dfec060604bdc383280",
 //     "6ab5893c6927c15a15665191f2c6cf751f5056d8b95ceee32e43c5e8a3648544"]
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    401 – Requires authorization
 //    404 – Image not found
@@ -201,7 +163,7 @@ func (this *ImageController) GETAncestry() {
 //     如果是 0.10 以前的版本从 X-Docker-Checksum 读取 checksum 值
 // 在上传 image 的 layer 文件时，checksum 被保存到 session 中，在存储之前检查是否和 session 中的值相同。
 // checksum 的值存储在 /v1/images/(image_id)/checksum
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    400 – 没有找到 checksum 或其它检查 checksum 合法性的时候出现错误
 //    404 – Image not found
@@ -216,7 +178,7 @@ func (this *ImageController) PUTChecksum() {
 //    Download the specified layer and determine the file contents.
 //    Alternatively, process a passed in file-object containing the
 //    layer data.
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    400 – 如果 layer 文件不是支持的 tar 类型
 //    404 – Image not found
@@ -243,12 +205,12 @@ func (this *ImageController) GETFiles() {
 //        - Ancestor contains non-deleted file:     CHANGED
 //        - Ancestor contains deleted marked file:  CREATED
 //        - No ancestor contains file:              CREATED
-// Status Codes: 
+// Status Codes:
 //    200 – OK
 //    400 – 如果 layer 文件不是支持的 tar 类型
 //    404 – Image not found
 func (this *ImageController) GETDiff() {
-  
+
 }
 
 // Undocumented API
