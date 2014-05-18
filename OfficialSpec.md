@@ -275,9 +275,7 @@ ancestor we know the file was just created.
 * 404 – Image not found
 
 ##### GET /v1/private_images/(image_id)/layer
-
 ##### GET /v1/private_images/(image_id)/json
-
 ##### GET /v1/private_images/(image_id)/files
 
 #### Docker Ping API
@@ -293,6 +291,7 @@ So 'X-Docker-Registry-Standalone' must be 'true' or '1'.
 
 ###### Status Codes:
 * 200 – OK
+
 
 #### Docker User API
 
@@ -395,3 +394,410 @@ Content-Type: application/json
 * 401 – Unauthorized
 * 403 – Account is not Active
 * 404 – User not found
+
+
+
+#### Docker Search API
+##### GET /v1/search
+
+Search the Index given a search term. It accepts GET only.
+
+> http://docs.docker.io/en/latest/reference/api/index_api/#search
+
+###### Example request
+```
+GET /v1/search?q=search_term HTTP/1.1
+Host: example.com
+Accept: application/json
+```
+
+###### Example response
+```
+HTTP/1.1 200 OK
+Vary: Accept
+Content-Type: application/json
+{
+  "query":"search_term",
+  "num_results": 3,
+  "results" : [
+      {"name": "ubuntu", "description": "An ubuntu image..."},
+      {"name": "centos", "description": "A centos image..."},
+      {"name": "fedora", "description": "A fedora image..."}
+  ]
+}
+```
+
+Query Parameters
+* q – what you want to search for
+
+###### Status Codes 
+* 200 – no error
+* 500 – server error
+
+
+#### Docker Repository API
+
+##### GET /v1/repositories/(namespace)/(repository)/tags
+
+get all of the tags for the given repo.
+
+> http://docs.docker.io/en/latest/reference/api/registry_api/#tags
+
+###### Example Request
+```
+GET /v1/repositories/foo/bar/tags HTTP/1.1
+Host: registry-1.docker.io
+Accept: application/json
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+Cookie: (Cookie provided by the Registry)
+```
+
+Parameters:
+* namespace – namespace for the repo
+* repository – name for the repo
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+{
+  "latest": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f",
+  "0.1.1":  "b486531f9a779a0c17e3ed29dae8f12c4f9e89cc6f0bc3c38722009fe6857087"
+}
+```
+###### Status Codes
+* 200 – OK
+* 401 – Requires authorization
+* 404 – Repository not found
+
+
+##### GET /v1/repositories/(namespace)/(repository)/tags/(tag)
+
+get a tag for the given repo.
+
+> http://docs.docker.io/en/latest/reference/api/registry_api/#tags
+
+###### Example Request
+```
+GET /v1/repositories/foo/bar/tags/latest HTTP/1.1
+Host: registry-1.docker.io
+Accept: application/json
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+Cookie: (Cookie provided by the Registry)
+```
+
+Parameters:
+* namespace – namespace for the repo
+* repository – name for the repo
+* tag – name of tag you want to get
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+"9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f"
+```
+
+###### Status Codes
+* 200 – OK
+* 401 – Requires authorization
+* 404 – Tag not found
+
+##### DELETE /v1/repositories/(namespace)/(repository)/tags/(tag)
+
+delete the tag for the repo
+
+> http://docs.docker.io/en/latest/reference/api/registry_api/#tags
+
+###### Example Request
+```
+DELETE /v1/repositories/foo/bar/tags/latest HTTP/1.1
+Host: registry-1.docker.io
+Accept: application/json
+Content-Type: application/json
+Cookie: (Cookie provided by the Registry)
+```
+
+Parameters:
+* namespace – namespace for the repo
+* repository – name for the repo
+* tag – name of tag you want to delete
+
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+""
+```
+
+###### Status Codes:
+* 200 – OK
+* 401 – Requires authorization
+* 404 – Tag not found
+
+
+##### PUT /v1/repositories/(namespace)/(repository)/tags/(tag)
+
+put a tag for the given repo.
+
+> http://docs.docker.io/en/latest/reference/api/registry_api/#tags
+
+###### Example Request
+```
+PUT /v1/repositories/foo/bar/tags/latest HTTP/1.1
+Host: registry-1.docker.io
+Accept: application/json
+Content-Type: application/json
+Cookie: (Cookie provided by the Registry)
+"9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f"
+```
+
+Parameters:
+* namespace – namespace for the repo
+* repository – name for the repo
+* tag – name of tag you want to add
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+""
+```
+
+###### Status Codes
+* 200 – OK
+* 400 – Invalid data
+* 401 – Requires authorization
+* 404 – Image not found
+
+
+##### DELETE /v1/repositories/(namespace)/(repository)/
+
+delete a repository
+
+> http://docs.docker.io/en/latest/reference/api/registry_api/#repositories
+
+###### Example Request
+```
+DELETE /v1/repositories/foo/bar/ HTTP/1.1
+Host: registry-1.docker.io
+Accept: application/json
+Content-Type: application/json
+Cookie: (Cookie provided by the Registry)
+""
+```
+
+Parameters:
+* namespace – namespace for the repo
+* repository – name for the repo
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+X-Docker-Registry-Version: 0.6.0
+""
+```
+
+###### Status Codes
+* 200 – OK
+* 401 – Requires authorization
+* 404 – Repository not found
+
+##### PUT /v1/repositories/(namespace)/(repo_name)/
+
+Create a user repository with the given namespace and repo_name.
+
+> http://docs.docker.io/en/latest/reference/api/index_api/#repository
+
+###### Example Request
+```
+PUT /v1/repositories/foo/bar/ HTTP/1.1
+Host: index.docker.io
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic akmklmasadalkm==
+X-Docker-Token: true
+[{"id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f"}]
+```
+Parameters:
+* namespace – the namespace for the repo
+* repo_name – the name for the repo
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+WWW-Authenticate: Token signature=123abc,repository="foo/bar",access=write
+X-Docker-Token: signature=123abc,repository="foo/bar",access=write
+X-Docker-Endpoints: registry-1.docker.io [, registry-2.docker.io]
+""
+```
+
+###### Status Codes
+* 200 – Created
+* 400 – Errors (invalid json, missing or invalid fields, etc)
+* 401 – Unauthorized
+* 403 – Account is not Active
+
+
+##### DELETE /v1/repositories/(namespace)/(repo_name)/
+
+Delete a user repository with the given namespace and repo_name.
+> http://docs.docker.io/en/latest/reference/api/index_api/#repository
+
+###### Example Request
+```
+DELETE /v1/repositories/foo/bar/ HTTP/1.1
+Host: index.docker.io
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic akmklmasadalkm==
+X-Docker-Token: true
+""
+```
+Parameters:
+* namespace – the namespace for the repo
+* repo_name – the name for the repo
+
+###### Example Response
+```
+HTTP/1.1 202
+Vary: Accept
+Content-Type: application/json
+WWW-Authenticate: Token signature=123abc,repository="foo/bar",access=delete
+X-Docker-Token: signature=123abc,repository="foo/bar",access=delete
+X-Docker-Endpoints: registry-1.docker.io [, registry-2.docker.io]
+""
+```
+
+###### Status Codes
+* 200 – Deleted
+* 202 – Accepted
+* 400 – Errors (invalid json, missing or invalid fields, etc)
+* 401 – Unauthorized
+* 403 – Account is not Active
+
+#####PUT /v1/repositories/(namespace)/(repo_name)/images
+
+Update the images for a user repo.
+> http://docs.docker.io/reference/api/index_api/#repository-images
+
+###### Example Request
+```
+PUT /v1/repositories/foo/bar/images HTTP/1.1
+Host: index.docker.io
+Accept: application/json
+Content-Type: application/json
+Authorization: Basic akmklmasadalkm==
+[
+  {
+    "id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f",
+    "checksum": "b486531f9a779a0c17e3ed29dae8f12c4f9e89cc6f0bc3c38722009fe6857087"
+  }
+]
+```
+Parameters:
+* namespace – the namespace for the repo
+* repo_name – the name for the repo
+
+###### Example Response
+```
+HTTP/1.1 204
+Vary: Accept
+Content-Type: application/json
+""
+```
+
+###### Status Codes
+* 204 – Created
+* 400 – Errors (invalid json, missing or invalid fields, etc)
+* 401 – Unauthorized
+* 403 – Account is not Active or permission denied
+
+
+##### GET /v1/repositories/(namespace)/(repo_name)/images
+
+get the images for a user repo.
+> http://docs.docker.io/reference/api/index_api/#repository-images
+
+###### Example Request
+```
+GET /v1/repositories/foo/bar/images HTTP/1.1
+Host: index.docker.io
+Accept: application/json
+```
+
+Parameters:
+* namespace – the namespace for the repo
+* repo_name – the name for the repo
+
+###### Example Response
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+[{"id": "9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f",
+"checksum": "b486531f9a779a0c17e3ed29dae8f12c4f9e89cc6f0bc3c38722009fe6857087"},
+{"id": "ertwetewtwe38722009fe6857087b486531f9a779a0c1dfddgfgsdgdsgds",
+"checksum": "34t23f23fc17e3ed29dae8f12c4f9e89cc6f0bsdfgfsdgdsgdsgerwgew"}]
+```
+
+###### Status Codes
+* 200 – OK
+* 404 – Not found
+
+##### PUT /v1/repositories/(namespace)/(repo_name)/auth
+
+authorize a token for a user repo
+> http://docs.docker.io/reference/api/index_api/#repository-authorization
+
+###### Example Request
+```
+PUT /v1/repositories/foo/bar/auth HTTP/1.1
+Host: index.docker.io
+Accept: application/json
+Authorization: Token signature=123abc,repository="foo/bar",access=write
+```
+
+Parameters:
+* namespace – the namespace for the repo
+* repo_name – the name for the repo
+
+###### Example Response:
+```
+HTTP/1.1 200
+Vary: Accept
+Content-Type: application/json
+"OK"
+```
+
+###### Status Codes
+* 200 – OK
+* 403 – Permission denied
+* 404 – Not found
+
+##### PUT /v1/repositories/:username/:repository/properties
+
+##### GET /v1/repositories/:username/:repository/properties
+
+##### GET /v1/repositories/:username/:repository/json
+
+##### GET /v1/repositories/:username/:repository/tags/:tag/json
+
+##### GET /v1/repositories/:username/:repository/json
+
+##### DELETE /v1/repositories/:username/:repository/tags/:tag/json
