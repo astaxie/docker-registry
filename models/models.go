@@ -2,11 +2,12 @@ package models
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/astaxie/beego"
-	"github.com/docker-registry/utils"
+	"github.com/dockboard/docker-registry/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
-	"log"
 )
 
 var x *xorm.Engine

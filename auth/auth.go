@@ -2,9 +2,10 @@ package auth
 
 import (
 	"fmt"
-	"github.com/docker-registry/models"
-	"github.com/docker-registry/utils"
 	"strings"
+
+	"github.com/dockboard/docker-registry/models"
+	"github.com/dockboard/docker-registry/utils"
 )
 
 type AuthError string

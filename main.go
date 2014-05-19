@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/astaxie/beego"
-	"github.com/docker-registry/models"
-	_ "github.com/docker-registry/routers"
-	"github.com/docker-registry/utils"
+	"github.com/dockboard/docker-registry/models"
+	_ "github.com/dockboard/docker-registry/routers"
+	"github.com/dockboard/docker-registry/utils"
 )
 
 func main() {

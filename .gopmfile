@@ -5,3 +5,5 @@ path=github.com/dockboard/docker-registry
 github.com/astaxie/beego = 
 github.com/Unknwon/goconfig =
 github.com/go-xorm/xorm =
+github.com/nu7hatch/gouuid =
+github.com/bitly/go-simplejson =
