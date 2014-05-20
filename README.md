@@ -47,3 +47,14 @@ gopm build
 
 How to Deploy?
 ==============
+
+How to Initlization MySQL Database?
+===================================
+
+```
+INSERT INTO mysql.user(Host,User,Password) VALUES ('localhost', 'docker', password('docker'));
+FLUSH PRIVILEGES;
+CREATE DATABASE `registry` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL PRIVILEGES ON registry.* TO docker@localhost IDENTIFIED BY 'docker';
+FLUSH PRIVILEGES;
+```
