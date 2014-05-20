@@ -134,25 +134,25 @@ func (this *RepositoryController) PutRepo() {
 
 func (this *RepositoryController) PutNamespaceTag() {
   //保存Tag信息
-  nowPutTag := new(models.RegistryRepositorieTag)
+  nowPutTag := new(models.Repository)
 
-  nowPutTag.RepositorieTag = string(this.Ctx.Input.CopyBody())
-  nowPutTag.RepositorieTagName = this.Ctx.Input.Param(":tag")
-  nowPutTag.RepositorieTagJson = this.Ctx.Input.Header("User-Agent")
-  nowPutTag.RepositorieTagNamespace = this.Ctx.Input.Param(":namespace")
-  nowPutTag.RepositorieTagRepository = this.Ctx.Input.Param(":repository")
+  nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
+  nowPutTag.TagName = this.Ctx.Input.Param(":tag")
+  nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
+  nowPutTag.Namespace = this.Ctx.Input.Param(":namespace")
+  nowPutTag.Repository = this.Ctx.Input.Param(":repository")
   models.PutOneTag(nowPutTag)
 }
 
 func (this *RepositoryController) PutTag() {
   //保存Tag信息
-  nowPutTag := new(models.RegistryRepositorieTag)
+  nowPutTag := new(models.Repository)
 
-  nowPutTag.RepositorieTag = string(this.Ctx.Input.CopyBody())
-  nowPutTag.RepositorieTagName = this.Ctx.Input.Param(":tag")
-  nowPutTag.RepositorieTagJson = this.Ctx.Input.Header("User-Agent")
-  nowPutTag.RepositorieTagNamespace = "library"
-  nowPutTag.RepositorieTagRepository = this.Ctx.Input.Param(":repository")
+  nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
+  nowPutTag.TagName = this.Ctx.Input.Param(":tag")
+  nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
+  nowPutTag.Namespace = "library"
+  nowPutTag.Repository = this.Ctx.Input.Param(":repository")
   models.PutOneTag(nowPutTag)
 
 }

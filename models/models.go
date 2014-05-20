@@ -20,24 +20,24 @@ type User struct {
   Token    string `xorm:"VARCHAR(255)"` //MD5(Username+Password+Timestamp)
 }
 
-type RegistryImage struct {
-  Id                     int64
-  ImageId                string `xorm:"VARCHAR(255)"`
-  ImageJson              string `xorm:"TEXT"`
-  ImageParentJson        string `xorm:"TEXT"`
-  ImageUploaded          int64
-  ImageCheckSumed        int64
-  XDockerChecksum        string `xorm:"TEXT"`
-  XDockerChecksumPayload string `xorm:"TEXT"`
+type Image struct {
+  Id         int64
+  ImageId    string `xorm:"VARCHAR(255)"`
+  JSON       string `xorm:"TEXT"`
+  ParentJSON string `xorm:"TEXT"`
+  Checksum   string `xorm:"TEXT"`
+  Payload    string `xorm:"TEXT"`
+  Uploaded   bool   `xorm:"Bool"`
+  CheckSumed bool   `xorm:"Bool"`
 }
 
-type RegistryRepositorieTag struct {
-  Id                       int64
-  RepositorieTagNamespace  string `xorm:"VARCHAR(255)"`
-  RepositorieTagRepository string `xorm:"VARCHAR(255)"`
-  RepositorieTagName       string `xorm:"VARCHAR(255)"`
-  RepositorieTagJson       string `xorm:"TEXT"`
-  RepositorieTag           string `xorm:"VARCHAR(255)"`
+type Repository struct {
+  Id         int64
+  Namespace  string `xorm:"VARCHAR(255)"`
+  Repository string `xorm:"VARCHAR(255)"`
+  TagName    string `xorm:"VARCHAR(255)"`
+  TagJSON    string `xorm:"TEXT"`
+  Tag        string `xorm:"VARCHAR(255)"`
 }
 
 func setEngine() {
@@ -66,14 +66,14 @@ func setEngine() {
 // InitDb initializes the database.
 func InitDb() {
   setEngine()
-  err := x.Sync(new(User), new(RegistryImage), new(RegistryRepositorieTag))
+  err := x.Sync(new(User), new(Image), new(Repository))
   if err != nil {
     log.Fatalf("models.init -> fail to sync database: %v", err)
   }
 }
 
-func GetImageById(imageId string) (returnImage *RegistryImage, err error) {
-  returnImage = new(RegistryImage)
+func GetImageById(imageId string) (returnImage *Image, err error) {
+  returnImage = new(Image)
   rows, err := x.Where("image_id=?", imageId).Rows(returnImage)
   defer rows.Close()
   if err != nil {
@@ -145,32 +145,32 @@ func GetRegistryUserAuth(authUsername string, authPassword string) (err error) {
   }
 }
 
-func InsertOneImage(putRegistryImage *RegistryImage) (affected int64, err error) {
+func InsertOneImage(putRegistryImage *Image) (affected int64, err error) {
   affected, err = x.InsertOne(putRegistryImage)
   return
 }
 
-func UpOneImage(putRegistryImage *RegistryImage) (affected int64, err error) {
+func UpOneImage(putRegistryImage *Image) (affected int64, err error) {
   affected, err = x.Id(putRegistryImage.Id).Update(putRegistryImage)
-  fmt.Println("putRegistryImage.ImageCheckSumed:", putRegistryImage.ImageCheckSumed, "___affected:", affected, "___err:", err)
+  fmt.Println("putRegistryImage.ImageCheckSumed:", putRegistryImage.CheckSumed, "___affected:", affected, "___err:", err)
   return
 }
 
-func InsertOneTag(insertRegistryRepositorieTag *RegistryRepositorieTag) (affected int64, err error) {
+func InsertOneTag(insertRegistryRepositorieTag *Repository) (affected int64, err error) {
   affected, err = x.InsertOne(insertRegistryRepositorieTag)
   return
 }
 
-func UpOneTag(upRegistryRepositorieTag *RegistryRepositorieTag) (affected int64, err error) {
+func UpOneTag(upRegistryRepositorieTag *Repository) (affected int64, err error) {
   affected, err = x.Id(upRegistryRepositorieTag.Id).Update(upRegistryRepositorieTag)
   return
 }
 
-func PutOneTag(upRegistryRepositorieTag *RegistryRepositorieTag) (affected int64, err error) {
+func PutOneTag(upRegistryRepositorieTag *Repository) (affected int64, err error) {
   rows, err := x.Where("repositorie_tag_name=? and repositorie_tag_namespace=? and repositorie_tag_repository=?",
-    upRegistryRepositorieTag.RepositorieTagName,
-    upRegistryRepositorieTag.RepositorieTagNamespace,
-    upRegistryRepositorieTag.RepositorieTagRepository).Rows(upRegistryRepositorieTag)
+    upRegistryRepositorieTag.TagName,
+    upRegistryRepositorieTag.Namespace,
+    upRegistryRepositorieTag.Repository).Rows(upRegistryRepositorieTag)
   defer rows.Close()
   if rows.Next() {
     x.Id(upRegistryRepositorieTag.Id).Delete(upRegistryRepositorieTag)
