@@ -41,16 +41,16 @@ type Repository struct {
 }
 
 func setEngine() {
-  dbHost := utils.Cfg.MustValue("db", "db_host")
-  dbName := utils.Cfg.MustValue("db", "db_name")
-  dbUser := utils.Cfg.MustValue("db", "db_user")
-  dbPasswd := utils.Cfg.MustValue("db", "db_passwd")
+  host   := utils.Cfg.MustValue("mysql", "host")
+  name   := utils.Cfg.MustValue("mysql", "name")
+  user   := utils.Cfg.MustValue("mysql", "user")
+  passwd := utils.Cfg.MustValue("mysql", "passwd")
 
   var err error
-  connStr := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8", dbUser, dbPasswd, dbHost, dbName)
-  beego.Trace("Initialized database connStr ->", connStr)
+  conn := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8", user, passwd, host, name)
+  beego.Trace("Initialized database connStr ->", conn)
 
-  x, err = xorm.NewEngine("mysql", connStr)
+  x, err = xorm.NewEngine("mysql", conn)
   if err != nil {
     log.Fatalf("models.init -> fail to conntect database: %v", err)
   }

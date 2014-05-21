@@ -66,13 +66,6 @@ func IsDirExists(path string) bool {
 	panic("not reached")
 }
 
-//func IsFileExists(path string) bool {
-//	if _, err := os.Stat(path); err == nil {
-//		os.Remove(path)
-//	}
-//	panic("not reached")
-//}
-
 func Substr(str string, start, length int) string {
 	rs := []rune(str)
 	rl := len(rs)
