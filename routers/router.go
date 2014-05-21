@@ -14,9 +14,13 @@ func init() {
 	beego.Router("/v1/_ping", &controllers.PingController{}, "get:GetPing")
 	beego.Router("/v1/_ping/", &controllers.PingController{}, "get:GetPing")
 
+	//User Router
 	beego.Router("/v1/users/", &controllers.UsersController{}, "get:GetUsers")
 	beego.Router("/v1/users/", &controllers.UsersController{}, "post:PostUsers")
+	beego.Router("/v1/users", &controllers.UsersController{}, "get:GetUsers")
+	beego.Router("/v1/users", &controllers.UsersController{}, "post:PostUsers")
 
+	//
 	beego.Router("/v1/repositories/:namespace/:repository/tags/:tag", &controllers.RepositoryController{}, "put:PutNamespaceTag")
 	beego.Router("/v1/repositories/:repository/tags/:tag", &controllers.RepositoryController{}, "put:PutTag")
 

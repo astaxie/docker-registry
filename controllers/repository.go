@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/dockboard/docker-registry/auth"
 	"github.com/dockboard/docker-registry/models"
 	"github.com/dockboard/docker-registry/utils"
 	"github.com/nu7hatch/gouuid"
@@ -38,9 +37,8 @@ func (this *RepositoryController) Prepare() {
 
 func (this *RepositoryController) PutNamespaceRepo() {
 	fmt.Println("进入PutNamespaceRepo")
-	//判断用户是否合法
-	authorizationBasic := this.Ctx.Input.Header("Authorization")
-	authUsername, authPasswd, authErr := auth.BaseAuth(authorizationBasic)
+	//TODO: 判断用户是否合法, 进行数据库查询
+	authUsername, authPasswd, authErr := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
 	if authErr != nil {
 		this.Ctx.Output.Context.Output.SetStatus(401)
 		this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))

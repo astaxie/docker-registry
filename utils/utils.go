@@ -24,21 +24,25 @@ func LoadConfig(cfgPath string) {
 	}
 }
 
-// 下面两个方法用来处理用户名和密码加密:Authorization: Basic ZnNrOmZzaw==
-// encode the auth string
-func EncodeAuth(userName string, password string) string {
-	authStr := userName + ":" + password
-	msg := []byte(authStr)
-	encoded := make([]byte, base64.StdEncoding.EncodedLen(len(msg)))
-	base64.StdEncoding.Encode(encoded, msg)
-	return string(encoded)
+//Encode the authorization string
+func EncodeBasicAuth(username string, password string) string {
+	auth := username + ":" + password
+	msg := []byte(auth)
+	authorization := make([]byte, base64.StdEncoding.EncodedLen(len(msg)))
+	base64.StdEncoding.Encode(authorization, msg)
+	return string(authorization)
 }
 
-// decode the auth string
-func DecodeAuth(authStr string) (string, string, error) {
-	decLen := base64.StdEncoding.DecodedLen(len(authStr))
+// decode the authorization string
+func DecodeBasicAuth(authorization string) (username string, password string, err error) {
+	basic := strings.Split(strings.TrimSpace(authorization), " ")
+	if len(basic) <= 1 {
+		return "", "", err
+	}
+
+	decLen := base64.StdEncoding.DecodedLen(len(basic[1]))
 	decoded := make([]byte, decLen)
-	authByte := []byte(authStr)
+	authByte := []byte(basic[1])
 	n, err := base64.StdEncoding.Decode(decoded, authByte)
 	if err != nil {
 		return "", "", err
@@ -50,8 +54,11 @@ func DecodeAuth(authStr string) (string, string, error) {
 	if len(arr) != 2 {
 		return "", "", fmt.Errorf("Invalid auth configuration file")
 	}
-	password := strings.Trim(arr[1], "\x00")
-	return arr[0], password, nil
+
+	username = arr[0]
+	password = strings.Trim(arr[1], "\x00")
+
+	return username, password, nil
 }
 
 func IsDirExists(path string) bool {

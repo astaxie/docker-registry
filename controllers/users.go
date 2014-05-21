@@ -20,7 +20,7 @@ package controllers
 
 import (
 	"github.com/astaxie/beego"
-	"github.com/dockboard/docker-registry/auth"
+	"github.com/dockboard/docker-registry/models"
 	"github.com/dockboard/docker-registry/utils"
 )
 
@@ -31,33 +31,33 @@ type UsersController struct {
 func (this *UsersController) Prepare() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Standalone", utils.Cfg.MustValue("docker", "Standalone"))
+}
+
+func (this *UsersController) PostUsers() {
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	this.Ctx.Output.Context.Output.SetStatus(401)
+	this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"We are limited beta testing now. Please contact Meaglith Ma <genedna@gmail.com> for beta account.\"}"))
 }
 
 func (this *UsersController) GetUsers() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-	authorizationBasic := this.Ctx.Input.Header("Authorization")
-	_, _, authErr := auth.BaseAuth(authorizationBasic)
-	if authErr != nil {
+	username, password, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401) //根据 Specification ，解码 Basic Authorization 数据失败也认为是 401 错误。
+		this.Ctx.Output.Body([]byte("\"Unauthorized\""))
+	}
+
+	var has bool
+	user := &models.User{Username: username, Password: password}
+	has, err = models.Engine.Get(user)
+
+	if has == false || err != nil {
 		this.Ctx.Output.Context.Output.SetStatus(401)
 		this.Ctx.Output.Body([]byte("\"Unauthorized\""))
-		return
-	} else {
-		this.Ctx.Output.Context.Output.SetStatus(200)
-		this.Ctx.Output.Context.Output.Body([]byte("{\"OK\"}"))
-		return
 	}
-}
 
-func (this *UsersController) PostUsers() {
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
-	this.Ctx.Output.Context.Output.SetStatus(401)
-	this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"目前不支持用户注册\"}"))
-	return
-}
-
-func (this *UsersController) PUTUsers() {
-
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("{\"OK\"}"))
 }
