@@ -2,42 +2,52 @@ package models
 
 import (
   "fmt"
-  "log"
-
   "github.com/astaxie/beego"
   "github.com/dockboard/docker-registry/utils"
   _ "github.com/go-sql-driver/mysql"
   "github.com/go-xorm/xorm"
+  "log"
+  "time"
 )
 
 var x *xorm.Engine
 
 type User struct {
   Id       int64
-  Username string `xorm:"VARCHAR(255)"`
-  Password string `xorm:"VARCHAR(255)"`
-  Email    string `xorm:"VARCHAR(255)"`
-  Token    string `xorm:"VARCHAR(255)"` //MD5(Username+Password+Timestamp)
+  Username string `xorm:"unique not null"`
+  Password string
+  Email    string `xorm:"unique not null"`
+  Token    string
+  Created  time.Time `xorm:"created"`
+  Updated  time.Time `xorm:"updated"`
+  Version  int       `xorm:"version"`
 }
 
 type Image struct {
   Id         int64
-  ImageId    string `xorm:"VARCHAR(255)"`
-  JSON       string `xorm:"TEXT"`
-  ParentJSON string `xorm:"TEXT"`
-  Checksum   string `xorm:"TEXT"`
-  Payload    string `xorm:"TEXT"`
-  Uploaded   bool   `xorm:"Bool"`
-  CheckSumed bool   `xorm:"Bool"`
+  ImageId    string `xorm:"unique not null"`
+  JSON       string `xorm:"text 'json'"`
+  ParentJSON string `xorm:"text 'parent_json'"`
+  Checksum   string `xorm:"text"`
+  Payload    string `xorm:"text"`
+  Uploaded   bool
+  CheckSumed bool      `xorm:"'checksumed'"`
+  Created    time.Time `xorm:"created"`
+  Updated    time.Time `xorm:"updated"`
+  Version    int       `xorm:"version"`
 }
 
 type Repository struct {
-  Id         int64
-  Namespace  string `xorm:"VARCHAR(255)"`
-  Repository string `xorm:"VARCHAR(255)"`
-  TagName    string `xorm:"VARCHAR(255)"`
-  TagJSON    string `xorm:"TEXT"`
-  Tag        string `xorm:"VARCHAR(255)"`
+  Id          int64
+  Namespace   string `xorm:"unique"`
+  Repository  string
+  Description string    `xorm:"text"`
+  TagName     string    `xorm:"text 'tag_name'"`
+  TagJSON     string    `xorm:"text 'tag_json'"`
+  Tag         string    `xorm:"text"`
+  Created     time.Time `xorm:"created"`
+  Updated     time.Time `xorm:"updated"`
+  Version     int       `xorm:"version"`
 }
 
 func setEngine() {
