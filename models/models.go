@@ -12,17 +12,6 @@ import (
 
 var x *xorm.Engine
 
-type User struct {
-  Id       int64
-  Username string `xorm:"unique not null"`
-  Password string
-  Email    string `xorm:"unique not null"`
-  Token    string
-  Created  time.Time `xorm:"created"`
-  Updated  time.Time `xorm:"updated"`
-  Version  int       `xorm:"version"`
-}
-
 type Image struct {
   Id         int64
   ImageId    string `xorm:"unique not null"`
@@ -51,10 +40,10 @@ type Repository struct {
 }
 
 func setEngine() {
-  host := utils.Cfg.MustValue("mysql", "host")
-  name := utils.Cfg.MustValue("mysql", "name")
-  user := utils.Cfg.MustValue("mysql", "user")
-  passwd := utils.Cfg.MustValue("mysql", "passwd")
+  host := utils.Cfg.MustValue("mysql", "Host")
+  name := utils.Cfg.MustValue("mysql", "Name")
+  user := utils.Cfg.MustValue("mysql", "User")
+  passwd := utils.Cfg.MustValue("mysql", "Passwd")
 
   var err error
   conn := fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8", user, passwd, host, name)
@@ -109,50 +98,6 @@ type OrmError string
 
 func (e OrmError) Error() string {
   return string(e)
-}
-
-func GetRegistryUserByUserName(mUserName string) (returnRegistryUser *User, err error) {
-  returnRegistryUser = new(User)
-  rows, err := x.Where("username=?", mUserName).Rows(returnRegistryUser)
-  if rows.Next() {
-    rows.Scan(returnRegistryUser)
-    return returnRegistryUser, nil
-  } else {
-    return nil, OrmError("get user by name error")
-  }
-
-}
-
-func GetRegistryUserByToken(mUserName string, mToken string) (returnRegistryUser *User, err error) {
-  returnRegistryUser = new(User)
-  rows, err := x.Where("username=? and token=?", mUserName, mToken).Rows(returnRegistryUser)
-  if rows.Next() {
-    rows.Scan(returnRegistryUser)
-    return returnRegistryUser, nil
-  } else {
-    return nil, OrmError("get user by token error")
-  }
-
-}
-
-func UpRegistryUser(upRegistryUser *User) (err error) {
-  _, err = x.Id(upRegistryUser.Id).Update(upRegistryUser)
-  if err != nil {
-    return err
-  } else {
-    return nil
-  }
-}
-
-func GetRegistryUserAuth(authUsername string, authPassword string) (err error) {
-  mRegistryUser := new(User)
-  rows, err := x.Where("username=? and password=?", authUsername, authPassword).Rows(mRegistryUser)
-
-  if rows.Next() {
-    return nil
-  } else {
-    return AuthError("Auth Error")
-  }
 }
 
 func InsertOneImage(putRegistryImage *Image) (affected int64, err error) {

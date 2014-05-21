@@ -81,15 +81,15 @@ func (this *RepositoryController) PutNamespaceRepo() {
   tokenSignature := hex.EncodeToString(h.Sum(nil))
   xDockerToken := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write",
     tokenSignature, strNamespace, strRepoName)
-  mRegistryUser, err := models.GetRegistryUserByUserName(authUsername)
-  if err != nil {
+
+  user := new(models.User)
+  has, err := user.GetByUsername(authUsername)
+  if has == false || err != nil {
     this.Ctx.Output.Context.Output.SetStatus(417)
     this.Ctx.Output.Context.Output.Body([]byte("{\"Expectation failed\"}"))
-
-    return
   }
-  mRegistryUser.Token = xDockerToken
-  models.UpRegistryUser(mRegistryUser)
+  user.Token = xDockerToken
+  user.UpRegistryUser()
 
   //X-Docker-Token: Token signature=OT63AV22Y5CGZV7N,repository="dockerfile/redis",access=write
   //WWW-Authenticate: Token signature=OT63AV22Y5CGZV7N,repository="dockerfile/redis",access=write

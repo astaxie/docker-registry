@@ -19,43 +19,43 @@ Docker Registry & Login
 package controllers
 
 import (
-	"github.com/astaxie/beego"
-	"github.com/dockboard/docker-registry/auth"
-	"github.com/dockboard/docker-registry/utils"
+  "github.com/astaxie/beego"
+  "github.com/dockboard/docker-registry/auth"
+  "github.com/dockboard/docker-registry/utils"
 )
 
 type UsersController struct {
-	beego.Controller
+  beego.Controller
 }
 
 func (this *UsersController) Prepare() {
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 }
 
 func (this *UsersController) GetUsers() {
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-	authorizationBasic := this.Ctx.Input.Header("Authorization")
-	_, _, authErr := auth.BaseAuth(authorizationBasic)
-	if authErr != nil {
-		this.Ctx.Output.Context.Output.SetStatus(401)
-		this.Ctx.Output.Body([]byte("\"Unauthorized\""))
-		return
-	} else {
-		this.Ctx.Output.Context.Output.SetStatus(200)
-		this.Ctx.Output.Context.Output.Body([]byte("{\"OK\"}"))
-		return
-	}
+  authorizationBasic := this.Ctx.Input.Header("Authorization")
+  _, _, authErr := auth.BaseAuth(authorizationBasic)
+  if authErr != nil {
+    this.Ctx.Output.Context.Output.SetStatus(401)
+    this.Ctx.Output.Body([]byte("\"Unauthorized\""))
+    return
+  } else {
+    this.Ctx.Output.Context.Output.SetStatus(200)
+    this.Ctx.Output.Context.Output.Body([]byte("{\"OK\"}"))
+    return
+  }
 }
 
 func (this *UsersController) PostUsers() {
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
-	this.Ctx.Output.Context.Output.SetStatus(401)
-	this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"目前不支持用户注册\"}"))
-	return
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
+  this.Ctx.Output.Context.Output.SetStatus(401)
+  this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"目前不支持用户注册\"}"))
+  return
 }
 
 func (this *UsersController) PUTUsers() {
