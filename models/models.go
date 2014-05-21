@@ -41,9 +41,9 @@ type Repository struct {
 }
 
 func setEngine() {
-  host   := utils.Cfg.MustValue("mysql", "host")
-  name   := utils.Cfg.MustValue("mysql", "name")
-  user   := utils.Cfg.MustValue("mysql", "user")
+  host := utils.Cfg.MustValue("mysql", "host")
+  name := utils.Cfg.MustValue("mysql", "name")
+  user := utils.Cfg.MustValue("mysql", "user")
   passwd := utils.Cfg.MustValue("mysql", "passwd")
 
   var err error
@@ -59,7 +59,7 @@ func setEngine() {
   x.ShowErr = true
   x.ShowSQL = true
 
-  beego.Trace("Initialized database ->", dbName)
+  beego.Trace("Initialized database ->", name)
 
 }
 
