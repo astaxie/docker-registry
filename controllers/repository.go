@@ -32,10 +32,6 @@ type RepositoryController struct {
   beego.Controller
 }
 
-type ErrorResult struct {
-  message string
-}
-
 func (this *RepositoryController) Prepare() {
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
@@ -51,7 +47,7 @@ func (this *RepositoryController) PutNamespaceRepository() {
   beego.Trace("Decode Basic Auth: " + username + " " + passwd)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
+    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
     return
   }
 
@@ -60,7 +56,7 @@ func (this *RepositoryController) PutNamespaceRepository() {
 
   if has == false || err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
+    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
     return
   }
 
@@ -81,7 +77,7 @@ func (this *RepositoryController) PutNamespaceRepository() {
   //判断用户的username和namespace是否相同
   if username != namespace {
     this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("{\"username != namespace\"}"))
+    this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
     return
   }
 
@@ -96,15 +92,18 @@ func (this *RepositoryController) PutNamespaceRepository() {
   h := md5.New()
   h.Write([]byte(md5String))
   signature := hex.EncodeToString(h.Sum(nil))
-  token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write",
-    signature, namespace, repository)
+  token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
+
+  beego.Trace("Token:" + token)
 
   //保存Token
   user.Token = token
-  _, err = models.Engine.Id(user.Id).Cols("Token").Update(&user)
+  _, err = models.Engine.Id(user.Id).Cols("Token").Update(user)
+
   if err != nil {
+    beego.Trace(err)
     this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("{\"Update token error.\"}"))
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
     return
   }
 
