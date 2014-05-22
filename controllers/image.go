@@ -18,24 +18,23 @@ type ImageController struct {
 }
 
 func (this *ImageController) Prepare() {
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 }
 
 func (this *ImageController) GetImageJson() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
 
 	//判断用户的token是否可以操作
-	mToken := string(this.Ctx.Input.Header("Authorization"))
-	mToken = strings.TrimSpace(mToken)
-	mToken = utils.Substr(mToken, 6, len(mToken))
+	authorization := this.Ctx.Input.Header("Authorization")
+	token := strings.Split(strings.TrimSpace(authorization), " ")[1]
 
-	mUserName := strings.Split(mToken, ",")[1]
+	mUserName := strings.Split(token, ",")[1]
 	mUserName = strings.Split(mUserName, "=")[1]
 	mUserName = utils.Substr(mUserName, 1, len(mUserName)-1)
 	mUserName = strings.Split(mUserName, "/")[0]
 
-	user := &models.User{Token: mToken}
+	user := &models.User{Token: token}
 	_, err := models.Engine.Get(user)
 	//TODO: Should be check has value.
 
@@ -62,8 +61,7 @@ func (this *ImageController) GetImageJson() {
 }
 func (this *ImageController) PutImageJson() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
+
 	//判断用户的token是否可以操作
 	mToken := string(this.Ctx.Input.Header("Authorization"))
 	mToken = strings.TrimSpace(mToken)
@@ -105,8 +103,6 @@ func (this *ImageController) PutImageJson() {
 
 func (this *ImageController) PutImageIdLayer() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
 	//判断用户的token是否可以操作
 	mToken := string(this.Ctx.Input.Header("Authorization"))
 	mToken = strings.TrimSpace(mToken)
@@ -173,8 +169,7 @@ func (this *ImageController) PutImageIdLayer() {
 func (this *ImageController) PutChecksum() {
 
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
+
 	//判断用户的token是否可以操作
 	mToken := string(this.Ctx.Input.Header("Authorization"))
 	mToken = strings.TrimSpace(mToken)
@@ -252,49 +247,5 @@ func (this *ImageController) PutChecksum() {
 	}
 
 	this.Ctx.Output.Context.Output.Body([]byte("true"))
-
-}
-
-func (this *ImageController) GETLayer() {
-
-}
-
-func (this *ImageController) PUTLayer() {
-
-}
-
-func (this *ImageController) GETJSON() {
-
-}
-
-func (this *ImageController) PUTJSON() {
-
-}
-
-func (this *ImageController) GETAncestry() {
-
-}
-
-func (this *ImageController) PUTChecksum() {
-
-}
-
-func (this *ImageController) GETFiles() {
-
-}
-
-func (this *ImageController) GETDiff() {
-
-}
-
-func (this *ImageController) GETPrivateLayer() {
-
-}
-
-func (this *ImageController) GETPrivateJSON() {
-
-}
-
-func (this *ImageController) GETPrivateFiles() {
 
 }

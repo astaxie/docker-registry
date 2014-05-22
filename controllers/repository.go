@@ -33,6 +33,8 @@ type RepositoryController struct {
 }
 
 func (this *RepositoryController) Prepare() {
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 }
 
 func (this *RepositoryController) PutNamespaceRepo() {
@@ -50,8 +52,6 @@ func (this *RepositoryController) PutNamespaceRepo() {
 	//X-Docker-Registry-Version: 0.6.8
 	//X-Docker-Registry-Config: dev
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
 
 	dockerRegistryBasePath := utils.Cfg.MustValue("docker", "DockerRegistryBasePath")
 	xDockerEndpoints := utils.Cfg.MustValue("docker", "XDockerEndpoints")
@@ -126,8 +126,6 @@ func (this *RepositoryController) PutRepo() {
 	this.Ctx.Output.Header("X-Docker-Token", xDockerToken)
 	this.Ctx.Output.Header("WWW-Authenticate", xDockerToken)
 	this.Ctx.Output.Header("X-Docker-Endpoints", xDockerEndpoints)
-	this.Ctx.Output.Header("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "XDockerRegistryVersion"))
-	this.Ctx.Output.Header("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "XDockerRegistryConfig"))
 
 	this.Ctx.Output.Body([]byte("\"\""))
 
@@ -167,60 +165,4 @@ func (this *RepositoryController) PutNamespaceImages() {
 
 func (this *RepositoryController) PutImages() {
 	this.Ctx.Output.Context.Output.SetStatus(204)
-}
-
-func (this *RepositoryController) GETTags() {
-
-}
-
-func (this *RepositoryController) GETTag() {
-
-}
-
-func (this *RepositoryController) DELETETag() {
-
-}
-
-func (this *RepositoryController) DELETERepositoryImages() {
-
-}
-
-func (this *RepositoryController) PUTRepository() {
-
-}
-
-func (this *RepositoryController) DELETERepository() {
-
-}
-
-func (this *RepositoryController) PUTRepositoryImages() {
-
-}
-
-func (this *RepositoryController) GETRepositoryImages() {
-
-}
-
-func (this *RepositoryController) PUTRepositoryAuth() {
-
-}
-
-func (this *RepositoryController) PUTProperties() {
-
-}
-
-func (this *RepositoryController) GETProperties() {
-
-}
-
-func (this *RepositoryController) GETRepositoryJSON() {
-
-}
-
-func (this *RepositoryController) GETTagJSON() {
-
-}
-
-func (this *RepositoryController) DELETERepositoryTags() {
-
 }
