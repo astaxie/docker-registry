@@ -16,167 +16,193 @@ Docker Push & Pull
 package controllers
 
 import (
-  "crypto/md5"
-  "encoding/hex"
-  "fmt"
-  "os"
-  "time"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"time"
 
-  "github.com/astaxie/beego"
-  "github.com/dockboard/docker-registry/models"
-  "github.com/dockboard/docker-registry/utils"
-  "github.com/nu7hatch/gouuid"
+	"github.com/astaxie/beego"
+	"github.com/dockboard/docker-registry/models"
+	"github.com/dockboard/docker-registry/utils"
+	"github.com/nu7hatch/gouuid"
 )
 
 type RepositoryController struct {
-  beego.Controller
+	beego.Controller
 }
 
 func (this *RepositoryController) Prepare() {
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 }
 
 func (this *RepositoryController) PutNamespaceRepository() {
-  //在有错误返回值之前就设置 Content-Type 的 HEADER
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	//Decode 后根据数据库判断用户是否存在和是否激活。
+	beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
+	username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Decode Basic Auth: " + username + " " + passwd)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
 
-  //Decode 后根据数据库判断用户是否存在和是否激活。
-  beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
-  username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
-  beego.Trace("Decode Basic Auth: " + username + " " + passwd)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
+	user := &models.User{Username: username, Password: passwd}
+	has, err := models.Engine.Get(user)
 
-  user := &models.User{Username: username, Password: passwd}
-  has, err := models.Engine.Get(user)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
 
-  if has == false || err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
+	if user.Actived == false {
+		this.Ctx.Output.Context.Output.SetStatus(403)
+		this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
+		return
+	}
 
-  if user.Actived == false {
-    this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
-    return
-  }
+	beego.Trace("User:" + user.Username)
 
-  beego.Trace("User:" + user.Username)
+	//获取namespace/repository 及文件保存路径
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
+	basePath := utils.Cfg.MustValue("docker", "BasePath")
+	repositoryPath := fmt.Sprintf("%v/repositories/%v/%v", basePath, namespace, repository)
 
-  //获取namespace/repository 及文件保存路径
-  namespace := string(this.Ctx.Input.Param(":namespace"))
-  repository := string(this.Ctx.Input.Param(":repo_name"))
-  basePath := utils.Cfg.MustValue("docker", "BasePath")
-  repositoryPath := fmt.Sprintf("%v/repositories/%v/%v", basePath, namespace, repository)
+	//判断用户的username和namespace是否相同
+	if username != namespace {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
+		return
+	}
 
-  //判断用户的username和namespace是否相同
-  if username != namespace {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
-    return
-  }
+	//判断目录是否存在，不存在则创建对应目录
+	if !utils.IsDirExists(repositoryPath) {
+		os.MkdirAll(repositoryPath, os.ModePerm)
+	}
 
-  //判断目录是否存在，不存在则创建对应目录
-  if !utils.IsDirExists(repositoryPath) {
-    os.MkdirAll(repositoryPath, os.ModePerm)
-  }
+	//创建token并保存
+	//需要加密的字符串为 UserName+UserPassword+时间戳
+	md5String := fmt.Sprintf("%v%v%v", username, passwd, string(time.Now().Unix()))
+	h := md5.New()
+	h.Write([]byte(md5String))
+	signature := hex.EncodeToString(h.Sum(nil))
+	token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
 
-  //创建token并保存
-  //需要加密的字符串为 UserName+UserPassword+时间戳
-  md5String := fmt.Sprintf("%v%v%v", username, passwd, string(time.Now().Unix()))
-  h := md5.New()
-  h.Write([]byte(md5String))
-  signature := hex.EncodeToString(h.Sum(nil))
-  token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
+	beego.Trace("Token:" + token)
 
-  beego.Trace("Token:" + token)
+	//保存Token
+	user.Token = token
+	_, err = models.Engine.Id(user.Id).Cols("Token").Update(user)
 
-  //保存Token
-  user.Token = token
-  _, err = models.Engine.Id(user.Id).Cols("Token").Update(user)
+	if err != nil {
+		beego.Trace(err)
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
+		return
+	}
 
-  if err != nil {
-    beego.Trace(err)
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
-    return
-  }
+	//创建或更新 Repository 数据
+	//也可以采用 ioutil.ReadAll(this.Ctx.Request.Body) 的方式读取 body 数据
+	beego.Trace("Request Body: " + string(this.Ctx.Input.CopyBody()))
 
-  //操作正常的输出
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", token)
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", token)
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
+	repo := &models.Repository{Namespace: namespace, Repository: repository}
+	has, err = models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		return
+	}
 
-  this.Ctx.Output.Context.Output.SetStatus(200)
-  this.Ctx.Output.Context.Output.Body([]byte("\"\""))
+	repo.JSON = string(this.Ctx.Input.CopyBody())
+
+	if has == true {
+		_, err := models.Engine.Id(repo.Id).Cols("JSON").Update(repo)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository JSON data error.\""))
+			return
+		}
+	} else {
+		_, err := models.Engine.Insert(repo)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error.\""))
+			return
+		}
+	}
+
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", token)
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", token)
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
+
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
 func (this *RepositoryController) PutRepo() {
 
-  //判断目录是否存在，不存在则创建对应目录
-  dockerRegistryBasePath := utils.Cfg.MustValue("docker", "DockerRegistryBasePath")
-  dockerRegistryRepoPath := fmt.Sprintf("%v/repositories/library/%v", dockerRegistryBasePath, string(this.Ctx.Input.Param(":repo_name")))
-  if !utils.IsDirExists(dockerRegistryRepoPath) {
-    os.MkdirAll(dockerRegistryRepoPath, os.ModePerm)
-  }
+	//判断目录是否存在，不存在则创建对应目录
+	dockerRegistryBasePath := utils.Cfg.MustValue("docker", "DockerRegistryBasePath")
+	dockerRegistryRepoPath := fmt.Sprintf("%v/repositories/library/%v", dockerRegistryBasePath, string(this.Ctx.Input.Param(":repo_name")))
+	if !utils.IsDirExists(dockerRegistryRepoPath) {
+		os.MkdirAll(dockerRegistryRepoPath, os.ModePerm)
+	}
 
-  //返回结果处理
-  //X-Docker-Token: Token signature=NU66YCHG8FK63I3G,repository="library/redis",access=write
-  tokenSignature, err := uuid.NewV5(uuid.NamespaceURL, []byte(this.Ctx.Input.Url()))
-  if err != nil {
-    fmt.Println("error:", err)
-    return
-  }
-  xDockerToken := fmt.Sprintf("Token signature=%v,repository=\"library/%v\",access=write",
-    tokenSignature, string(this.Ctx.Input.Param(":repo_name")))
-  xDockerEndpoints := utils.Cfg.MustValue("docker", "XDockerEndpoints")
+	//返回结果处理
+	//X-Docker-Token: Token signature=NU66YCHG8FK63I3G,repository="library/redis",access=write
+	tokenSignature, err := uuid.NewV5(uuid.NamespaceURL, []byte(this.Ctx.Input.Url()))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	xDockerToken := fmt.Sprintf("Token signature=%v,repository=\"library/%v\",access=write",
+		tokenSignature, string(this.Ctx.Input.Param(":repo_name")))
+	xDockerEndpoints := utils.Cfg.MustValue("docker", "XDockerEndpoints")
 
-  this.Ctx.Output.ContentType("application/json")
-  this.Ctx.Output.Header("X-Docker-Token", xDockerToken)
-  this.Ctx.Output.Header("WWW-Authenticate", xDockerToken)
-  this.Ctx.Output.Header("X-Docker-Endpoints", xDockerEndpoints)
+	this.Ctx.Output.ContentType("application/json")
+	this.Ctx.Output.Header("X-Docker-Token", xDockerToken)
+	this.Ctx.Output.Header("WWW-Authenticate", xDockerToken)
+	this.Ctx.Output.Header("X-Docker-Endpoints", xDockerEndpoints)
 
-  this.Ctx.Output.Body([]byte("\"\""))
+	this.Ctx.Output.Body([]byte("\"\""))
 
 }
 
 func (this *RepositoryController) PutNamespaceTag() {
-  //保存Tag信息
-  nowPutTag := new(models.Repository)
+	//保存Tag信息
+	nowPutTag := new(models.Repository)
 
-  nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
-  nowPutTag.TagName = this.Ctx.Input.Param(":tag")
-  nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
-  nowPutTag.Namespace = this.Ctx.Input.Param(":namespace")
-  nowPutTag.Repository = this.Ctx.Input.Param(":repository")
-  models.PutOneTag(nowPutTag)
+	nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
+	nowPutTag.TagName = this.Ctx.Input.Param(":tag")
+	nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
+	nowPutTag.Namespace = this.Ctx.Input.Param(":namespace")
+	nowPutTag.Repository = this.Ctx.Input.Param(":repository")
+	models.PutOneTag(nowPutTag)
 }
 
 func (this *RepositoryController) PutTag() {
-  //保存Tag信息
-  nowPutTag := new(models.Repository)
+	//保存Tag信息
+	nowPutTag := new(models.Repository)
 
-  nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
-  nowPutTag.TagName = this.Ctx.Input.Param(":tag")
-  nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
-  nowPutTag.Namespace = "library"
-  nowPutTag.Repository = this.Ctx.Input.Param(":repository")
-  models.PutOneTag(nowPutTag)
+	nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
+	nowPutTag.TagName = this.Ctx.Input.Param(":tag")
+	nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
+	nowPutTag.Namespace = "library"
+	nowPutTag.Repository = this.Ctx.Input.Param(":repository")
+	models.PutOneTag(nowPutTag)
 
 }
 
 func (this *RepositoryController) PutNamespaceImages() {
-  //这里应该计算checksum
-  //返回204
-  this.Ctx.Output.Context.Output.SetStatus(204)
+	this.Ctx.Output.Context.Output.SetStatus(204)
 
 }
 
 func (this *RepositoryController) PutImages() {
-  this.Ctx.Output.Context.Output.SetStatus(204)
+	this.Ctx.Output.Context.Output.SetStatus(204)
 }

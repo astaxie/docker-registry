@@ -9,6 +9,7 @@ type Repository struct {
 	Namespace   string `xorm:"unique"`
 	Repository  string
 	Description string    `xorm:"text"`
+	JSON        string    `xorm:"text 'json'"`
 	TagName     string    `xorm:"text 'tag_name'"`
 	TagJSON     string    `xorm:"text 'tag_json'"`
 	Tag         string    `xorm:"text"`
