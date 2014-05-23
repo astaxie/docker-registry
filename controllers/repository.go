@@ -25,7 +25,6 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/dockboard/docker-registry/models"
 	"github.com/dockboard/docker-registry/utils"
-	"github.com/nu7hatch/gouuid"
 )
 
 type RepositoryController struct {
@@ -37,7 +36,7 @@ func (this *RepositoryController) Prepare() {
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 }
 
-func (this *RepositoryController) PutNamespaceRepository() {
+func (this *RepositoryController) PutRepository() {
 	//Decode 后根据数据库判断用户是否存在和是否激活。
 	beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
 	username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
@@ -144,65 +143,54 @@ func (this *RepositoryController) PutNamespaceRepository() {
 	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
-func (this *RepositoryController) PutRepo() {
+func (this *RepositoryController) PutTag() {
+	repository := &models.Repository{Namespace: this.Ctx.Input.Param(":namespace"), Repository: this.Ctx.Input.Param(":repository")}
+	has, err := models.Engine.Get(repository)
 
-	//判断目录是否存在，不存在则创建对应目录
-	dockerRegistryBasePath := utils.Cfg.MustValue("docker", "DockerRegistryBasePath")
-	dockerRegistryRepoPath := fmt.Sprintf("%v/repositories/library/%v", dockerRegistryBasePath, string(this.Ctx.Input.Param(":repo_name")))
-	if !utils.IsDirExists(dockerRegistryRepoPath) {
-		os.MkdirAll(dockerRegistryRepoPath, os.ModePerm)
-	}
-
-	//返回结果处理
-	//X-Docker-Token: Token signature=NU66YCHG8FK63I3G,repository="library/redis",access=write
-	tokenSignature, err := uuid.NewV5(uuid.NamespaceURL, []byte(this.Ctx.Input.Url()))
-	if err != nil {
-		fmt.Println("error:", err)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unknow namespace and repository.\""))
 		return
 	}
-	xDockerToken := fmt.Sprintf("Token signature=%v,repository=\"library/%v\",access=write",
-		tokenSignature, string(this.Ctx.Input.Param(":repo_name")))
-	xDockerEndpoints := utils.Cfg.MustValue("docker", "XDockerEndpoints")
 
-	this.Ctx.Output.ContentType("application/json")
-	this.Ctx.Output.Header("X-Docker-Token", xDockerToken)
-	this.Ctx.Output.Header("WWW-Authenticate", xDockerToken)
-	this.Ctx.Output.Header("X-Docker-Endpoints", xDockerEndpoints)
+	tag := &models.Tag{Name: this.Ctx.Input.Param(":tag"), Repository: repository.Id}
+	has, err = models.Engine.Get(tag)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search tag encounter error.\""))
+		return
+	}
 
-	this.Ctx.Output.Body([]byte("\"\""))
+	tag.JSON = this.Ctx.Input.Header("User-Agent")
+	tag.ImageId = string(this.Ctx.Input.CopyBody())
 
+	if has == true {
+		_, err := models.Engine.Id(tag.Id).Update(tag)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Update the tag data error.\""))
+			return
+		}
+	} else {
+		_, err := models.Engine.Insert(tag)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Create the tag record error.\""))
+			return
+		}
+	}
+
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
-func (this *RepositoryController) PutNamespaceTag() {
-	//保存Tag信息
-	nowPutTag := new(models.Repository)
+func (this *RepositoryController) PutRepositoryImages() {
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-	nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
-	nowPutTag.TagName = this.Ctx.Input.Param(":tag")
-	nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
-	nowPutTag.Namespace = this.Ctx.Input.Param(":namespace")
-	nowPutTag.Repository = this.Ctx.Input.Param(":repository")
-	models.PutOneTag(nowPutTag)
-}
-
-func (this *RepositoryController) PutTag() {
-	//保存Tag信息
-	nowPutTag := new(models.Repository)
-
-	nowPutTag.Tag = string(this.Ctx.Input.CopyBody())
-	nowPutTag.TagName = this.Ctx.Input.Param(":tag")
-	nowPutTag.TagJSON = this.Ctx.Input.Header("User-Agent")
-	nowPutTag.Namespace = "library"
-	nowPutTag.Repository = this.Ctx.Input.Param(":repository")
-	models.PutOneTag(nowPutTag)
-
-}
-
-func (this *RepositoryController) PutNamespaceImages() {
-	this.Ctx.Output.Context.Output.SetStatus(204)
-
-}
-
-func (this *RepositoryController) PutImages() {
-	this.Ctx.Output.Context.Output.SetStatus(204)
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }

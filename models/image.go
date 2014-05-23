@@ -12,8 +12,8 @@ type Image struct {
 	Checksum   string    `xorm:"text"`
 	Payload    string    `xorm:"text"`
 	URLs       string    `xorm:"text 'urls'"`
-	Uploaded   bool      `xorm:"default fales 'uploaded'"`
-	CheckSumed bool      `xorm:"default false 'checksumed'"`
+	Uploaded   bool      `xorm:"default 0 'uploaded'"`
+	CheckSumed bool      `xorm:"default 0 'checksumed'"`
 	Created    time.Time `xorm:"created"`
 	Updated    time.Time `xorm:"updated"`
 	Version    int       `xorm:"version"`
