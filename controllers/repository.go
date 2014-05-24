@@ -19,7 +19,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"regexp"
 	"time"
 
@@ -68,19 +67,12 @@ func (this *RepositoryController) PutRepository() {
 	//获取namespace/repository 及文件保存路径
 	namespace := string(this.Ctx.Input.Param(":namespace"))
 	repository := string(this.Ctx.Input.Param(":repo_name"))
-	basePath := utils.Cfg.MustValue("docker", "BasePath")
-	repositoryPath := fmt.Sprintf("%v/repositories/%v/%v", basePath, namespace, repository)
 
 	//判断用户的username和namespace是否相同
 	if username != namespace {
 		this.Ctx.Output.Context.Output.SetStatus(400)
 		this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
 		return
-	}
-
-	//判断目录是否存在，不存在则创建对应目录
-	if !utils.IsDirExists(repositoryPath) {
-		os.MkdirAll(repositoryPath, os.ModePerm)
 	}
 
 	//创建token并保存
@@ -129,7 +121,7 @@ func (this *RepositoryController) PutRepository() {
 		_, err := models.Engine.Insert(repo)
 		if err != nil {
 			this.Ctx.Output.Context.Output.SetStatus(400)
-			this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error.\""))
+			this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error: \"" + err.Error()))
 			return
 		}
 	}

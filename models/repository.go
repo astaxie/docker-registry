@@ -6,7 +6,7 @@ import (
 
 type Repository struct {
 	Id          int64
-	Namespace   string `xorm:"unique"`
+	Namespace   string
 	Repository  string
 	Description string    `xorm:"text"`
 	JSON        string    `xorm:"text 'json'"`
