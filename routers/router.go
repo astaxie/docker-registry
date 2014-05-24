@@ -20,6 +20,15 @@ func init() {
 	beego.Router("/v1/users", &controllers.UsersController{}, "get:GetUsers")
 	beego.Router("/v1/users", &controllers.UsersController{}, "post:PostUsers")
 
+	//根据 Router 的规则把此定义放在上部。
+	//Push -> 3. 根据 Repository 的所有 Tag 信息循环写入所有的 Tag
+	beego.Router("/v1/repositories/:namespace/:repository/tags/:tag/", &controllers.RepositoryController{}, "put:PutTag")
+	beego.Router("/v1/repositories/:namespace/:repository/tags/:tag", &controllers.RepositoryController{}, "put:PutTag")
+
+	//Push -> 4. 最后执行，并没有上传任何有效数据
+	beego.Router("/v1/repositories/:namespace/:repository/images/", &controllers.RepositoryController{}, "put:PutRepositoryImages")
+	beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "put:PutRepositoryImages")
+
 	//Push Router Begin
 	//1. 写入要上传的 Repository 的 JSON 信息，此 JSON 信息是一个包含所有 Image ID 的 JSON 字符串。
 	beego.Router("/v1/repositories/:namespace/:repo_name/", &controllers.RepositoryController{}, "put:PutRepository")
@@ -38,12 +47,7 @@ func init() {
 	beego.Router("/v1/images/:image_id/checksum/", &controllers.ImageController{}, "put:PutChecksum")
 	beego.Router("/v1/images/:image_id/checksum", &controllers.ImageController{}, "put:PutChecksum")
 	//End Image 循环
-	//3. 根据 Repository 的所有 Tag 信息循环写入所有的 Tag
-	beego.Router("/v1/repositories/:namespace/:repository/tags/:tag/", &controllers.RepositoryController{}, "put:PutTag")
-	beego.Router("/v1/repositories/:namespace/:repository/tags/:tag", &controllers.RepositoryController{}, "put:PutTag")
-	//4. 最后执行，并没有上传任何有效数据
-	beego.Router("/v1/repositories/:namespace/:repository/images/", &controllers.RepositoryController{}, "put:PutRepositoryImages")
-	beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "put:PutRepositoryImages")
+	//而后的操作请看上部的 Push -> 3 和 Push -> 4
 	//Push Router End
 
 	beego.Router("/_status", &controllers.StatusController{})

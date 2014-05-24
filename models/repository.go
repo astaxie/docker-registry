@@ -18,8 +18,8 @@ type Repository struct {
 type Tag struct {
 	Id         int64
 	Name       string
-	JSON       string
-	ImageId    string
+	JSON       string    `xorm:"text 'json'"`
+	ImageId    string    `xorm:"text 'image_id"`
 	Repository int64     `xorm:"repository_id"`
 	Created    time.Time `xorm:"created"`
 	Updated    time.Time `xorm:"updated"`

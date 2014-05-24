@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -193,6 +193,10 @@ func (this *ImageController) PutChecksum() {
 		return
 	}
 
+	beego.Trace("Cookie: " + this.Ctx.Input.Header("Cookie"))
+	beego.Trace("X-Docker-Checksum: " + this.Ctx.Input.Header("X-Docker-Checksum"))
+	beego.Trace("X-Docker-Checksum-Payload: " + this.Ctx.Input.Header("X-Docker-Checksum-Payload"))
+
 	//将 checksum 的值保存到数据库
 	//Cookie: session=sFu7ZQLtC0EJPjH693JqWp61jL4=?checksum=KGxwMApTJ3NoYTI1NjplZTQwY2U4NGU2ZTA4NmIyM2E3ZDg0YzhkZTM0ZWU0YjcyYzgyZGEwMzI3ZmVlODVkZjkzY2M4NDRhMmM5ZmMzJwpwMQphLg==
 	//X-Docker-Checksum: tarsum+sha256:6eb9bea3d03c72ec2f652869475e21bc11c0409d412c22ea5c44f371d02dda0b
@@ -211,37 +215,37 @@ func (this *ImageController) PutChecksum() {
 	image.Payload = this.Ctx.Input.Header("X-Docker-Checksum-Payload")
 	image.CheckSumed = true
 
-	//计算这个Layer的父子结构
-	var imageJSON map[string]interface{}
-	if err := json.Unmarshal([]byte(image.JSON), &imageJSON); err != nil {
-		this.Ctx.Output.Context.Output.SetStatus(400)
-		this.Ctx.Output.Context.Output.Body([]byte("\"Decode the image json data encouter error.\""))
-		return
-	}
+	// //计算这个Layer的父子结构
+	// var imageJSON map[string]interface{}
+	// if err := json.Unmarshal([]byte(image.JSON), &imageJSON); err != nil {
+	// 	this.Ctx.Output.Context.Output.SetStatus(400)
+	// 	this.Ctx.Output.Context.Output.Body([]byte("\"Decode the image json data encouter error.\""))
+	// 	return
+	// }
 
-	parentJSON := make([]string, 10, 10)
+	// parentJSON := make([]string, 10, 10)
 
-	//存在 parent 的 ID
-	if value, has := imageJSON["parent"]; has {
-		parentImage := &models.Image{ImageId: value.(string)}
-		_, err := models.Engine.Get(parentImage)
-		if err != nil {
-			this.Ctx.Output.Context.Output.SetStatus(400)
-			this.Ctx.Output.Context.Output.Body([]byte("\"Check the parent image error.\""))
-			return
-		}
+	// //存在 parent 的 ID
+	// if value, has := imageJSON["parent"]; has {
+	// 	parentImage := &models.Image{ImageId: value.(string)}
+	// 	_, err := models.Engine.Get(parentImage)
+	// 	if err != nil {
+	// 		this.Ctx.Output.Context.Output.SetStatus(400)
+	// 		this.Ctx.Output.Context.Output.Body([]byte("\"Check the parent image error.\""))
+	// 		return
+	// 	}
 
-		if err := json.Unmarshal([]byte(parentImage.JSON), &parentJSON); err != nil {
-			this.Ctx.Output.Context.Output.SetStatus(400)
-			this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
-			return
-		}
+	// 	if err := json.Unmarshal([]byte(parentImage.JSON), &parentJSON); err != nil {
+	// 		this.Ctx.Output.Context.Output.SetStatus(400)
+	// 		this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
+	// 		return
+	// 	}
 
-		parentJSON = append(parentJSON, value.(string))
-	}
+	// 	parentJSON = append(parentJSON, value.(string))
+	// }
 
-	parent, _ := json.Marshal(parentJSON)
-	image.ParentJSON = string(parent)
+	// parent, _ := json.Marshal(parentJSON)
+	// image.ParentJSON = string(parent)
 
 	_, err = models.Engine.Id(image.Id).Update(image)
 	if err != nil {

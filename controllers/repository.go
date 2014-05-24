@@ -144,6 +144,12 @@ func (this *RepositoryController) PutRepository() {
 }
 
 func (this *RepositoryController) PutTag() {
+
+	beego.Trace("Namespace: " + this.Ctx.Input.Param(":namespace"))
+	beego.Trace("Repository: " + this.Ctx.Input.Param(":repository"))
+	beego.Trace("Tag: " + this.Ctx.Input.Param(":tag"))
+	beego.Trace("User-Agent: " + this.Ctx.Input.Header("User-Agent"))
+
 	repository := &models.Repository{Namespace: this.Ctx.Input.Param(":namespace"), Repository: this.Ctx.Input.Param(":repository")}
 	has, err := models.Engine.Get(repository)
 
@@ -191,6 +197,6 @@ func (this *RepositoryController) PutRepositoryImages() {
 	//操作正常的输出
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.SetStatus(204)
 	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
