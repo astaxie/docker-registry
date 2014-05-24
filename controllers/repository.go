@@ -18,6 +18,7 @@ package controllers
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -64,7 +65,7 @@ func (this *RepositoryController) PutRepository() {
 
 	beego.Trace("User:" + user.Username)
 
-	//获取namespace/repository 及文件保存路径
+	//获取namespace/repository
 	namespace := string(this.Ctx.Input.Param(":namespace"))
 	repository := string(this.Ctx.Input.Param(":repo_name"))
 
@@ -190,10 +191,148 @@ func (this *RepositoryController) PutTag() {
 	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
+//docker client 没有上传完整的 checksum ，如何进行完整性检查？
 func (this *RepositoryController) PutRepositoryImages() {
 	//操作正常的输出
 	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
 	this.Ctx.Output.Context.Output.SetStatus(204)
 	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
+}
+
+func (this *RepositoryController) GetRepositoryImages() {
+	//Decode 后根据数据库判断用户是否存在和是否激活。
+	beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
+	username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Decode Basic Auth: " + username + " " + passwd)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	user := &models.User{Username: username, Password: passwd}
+	has, err := models.Engine.Get(user)
+
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	if user.Actived == false {
+		this.Ctx.Output.Context.Output.SetStatus(403)
+		this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
+		return
+	}
+
+	beego.Trace("User:" + user.Username)
+
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
+
+	//判断用户的username和namespace是否相同
+	if username != namespace {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
+		return
+	}
+
+	//创建token并保存
+	//需要加密的字符串为 UserName+UserPassword+时间戳
+	md5String := fmt.Sprintf("%v%v%v", username, passwd, string(time.Now().Unix()))
+	h := md5.New()
+	h.Write([]byte(md5String))
+	signature := hex.EncodeToString(h.Sum(nil))
+	token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
+
+	beego.Trace("Token:" + token)
+
+	//保存Token
+	user.Token = token
+	_, err = models.Engine.Id(user.Id).Cols("Token").Update(user)
+
+	if err != nil {
+		beego.Trace(err)
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
+		return
+	}
+
+	//查询 Repository 数据
+	repo := &models.Repository{Namespace: namespace, Repository: repository}
+	has, err = models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		return
+	}
+
+	if has == false {
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+		return
+	} else {
+		//存在 Repository 数据，查询所有的 Tag 数据。
+		tags := make([]models.Tag, 0)
+		err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
+
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
+			return
+		}
+
+		if len(tags) == 0 {
+			this.Ctx.Output.Context.Output.SetStatus(404)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
+			return
+		}
+
+		//根据 Tag 的 Image ID 值查询 ParentJSON 数据，然后同一在一个数组里面去重。
+		var images []string
+		for _, tag := range tags {
+			image := &models.Image{ImageId: tag.ImageId}
+			has, err := models.Engine.Get(&image)
+
+			if has == false || err != nil {
+				this.Ctx.Output.Context.Output.SetStatus(400)
+				this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
+				return
+			}
+
+			if has == true {
+				var parents []string
+				if err := json.Unmarshal([]byte(image.ParentJSON), &parents); err != nil {
+					this.Ctx.Output.Context.Output.SetStatus(400)
+					this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
+					return
+				}
+				images = append(parents, images...)
+			}
+		}
+
+		utils.RemoveDuplicateString(&images)
+
+		//转换为 map 的对象返回
+		var results []map[string]string
+		for _, value := range images {
+			result := make(map[string]string)
+			result["id"] = value
+			results = append(results, result)
+		}
+
+		beego.Trace(results)
+
+		imageIds, _ := json.Marshal(results)
+
+		//操作正常的输出
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body(imageIds)
+
+	}
+
 }

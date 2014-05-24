@@ -73,32 +73,17 @@ func IsDirExists(path string) bool {
 	panic("not reached")
 }
 
-func Substr(str string, start, length int) string {
-	rs := []rune(str)
-	rl := len(rs)
-	end := 0
+func RemoveDuplicateString(s *[]string) {
+	found := make(map[string]bool)
+	j := 0
 
-	if start < 0 {
-		start = rl - 1 + start
-	}
-	end = start + length
-
-	if start > end {
-		start, end = end, start
+	for i, val := range *s {
+		if _, ok := found[val]; !ok {
+			found[val] = true
+			(*s)[j] = (*s)[i]
+			j++
+		}
 	}
 
-	if start < 0 {
-		start = 0
-	}
-	if start > rl {
-		start = rl
-	}
-	if end < 0 {
-		end = 0
-	}
-	if end > rl {
-		end = rl
-	}
-
-	return string(rs[start:end])
+	*s = (*s)[:j]
 }
