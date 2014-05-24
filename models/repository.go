@@ -10,6 +10,8 @@ type Repository struct {
 	Repository  string
 	Description string    `xorm:"text"`
 	JSON        string    `xorm:"text 'json'"`
+	Size        int       `xorm:"default 0"`
+	Download    int       `xorm:"default 0"`
 	Created     time.Time `xorm:"created"`
 	Updated     time.Time `xorm:"updated"`
 	Version     int       `xorm:"version"`
