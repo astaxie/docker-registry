@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/astaxie/beego"
@@ -168,7 +169,11 @@ func (this *RepositoryController) PutTag() {
 	}
 
 	tag.JSON = this.Ctx.Input.Header("User-Agent")
-	tag.ImageId = string(this.Ctx.Input.CopyBody())
+
+	r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
+	imageIds := r.FindStringSubmatch(string(this.Ctx.Input.CopyBody()))
+
+	tag.ImageId = imageIds[1]
 
 	if has == true {
 		_, err := models.Engine.Id(tag.Id).Update(tag)
