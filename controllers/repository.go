@@ -232,13 +232,6 @@ func (this *RepositoryController) GetRepositoryImages() {
 	namespace := string(this.Ctx.Input.Param(":namespace"))
 	repository := string(this.Ctx.Input.Param(":repo_name"))
 
-	//判断用户的username和namespace是否相同
-	if username != namespace {
-		this.Ctx.Output.Context.Output.SetStatus(400)
-		this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
-		return
-	}
-
 	//创建token并保存
 	//需要加密的字符串为 UserName+UserPassword+时间戳
 	md5String := fmt.Sprintf("%v%v%v", username, passwd, string(time.Now().Unix()))
@@ -340,5 +333,80 @@ func (this *RepositoryController) GetRepositoryImages() {
 }
 
 func (this *RepositoryController) GetRepositoryTags() {
+	//Decode 后根据数据库判断用户是否存在和是否激活。
+	beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
+	username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Decode Basic Auth: " + username + " " + passwd)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
 
+	user := &models.User{Username: username, Password: passwd}
+	has, err := models.Engine.Get(user)
+
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	if user.Actived == false {
+		this.Ctx.Output.Context.Output.SetStatus(403)
+		this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
+		return
+	}
+
+	beego.Trace("User:" + user.Username)
+
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
+
+	//查询 Repository 数据
+	repo := &models.Repository{Namespace: namespace, Repository: repository}
+	has, err = models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		return
+	}
+
+	if has == false {
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+		return
+	} else {
+		//存在 Repository 数据，查询所有的 Tag 数据。
+		tags := make([]models.Tag, 0)
+		err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
+
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
+			return
+		}
+
+		if len(tags) == 0 {
+			this.Ctx.Output.Context.Output.SetStatus(404)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
+			return
+		}
+
+		results := make([]interface{}, 0)
+		for _, v := range tags {
+			tag := make(map[string]string, 0)
+			tag[v.Name] = v.ImageId
+			results = append(results, tag)
+		}
+
+		result, _ := json.Marshal(results)
+
+		//操作正常的输出
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body(result)
+	}
 }
