@@ -264,3 +264,75 @@ func (this *ImageController) PutChecksum() {
 	this.Ctx.Output.Context.Output.Body([]byte(""))
 
 }
+
+func (this *ImageController) GetImageAncestry() {
+	//判断用户的token是否可以操作
+	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
+	//显示两个 Token 系 docker client 的 Bug 。
+	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
+	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
+	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Token: " + authorizations[0])
+	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
+
+	user := &models.User{Username: username, Token: token}
+	has, err := models.Engine.Get(user)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	imageId := string(this.Ctx.Input.Param(":image_id"))
+	image := &models.Image{ImageId: imageId}
+	has, err = models.Engine.Get(image)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
+		return
+	}
+
+	if has {
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body([]byte(image.ParentJSON))
+	}
+}
+
+func (this *ImageController) GetImageJSON() {
+	//判断用户的token是否可以操作
+	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
+	//显示两个 Token 系 docker client 的 Bug 。
+	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
+	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
+	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Token: " + authorizations[0])
+	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
+
+	user := &models.User{Username: username, Token: token}
+	has, err := models.Engine.Get(user)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	imageId := string(this.Ctx.Input.Param(":image_id"))
+	image := &models.Image{ImageId: imageId}
+	has, err = models.Engine.Get(image)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
+		return
+	}
+
+	if has {
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body([]byte(image.JSON))
+	}
+}
+
+func (this *ImageController) GetImageLayer() {
+
+}

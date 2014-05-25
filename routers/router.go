@@ -33,6 +33,12 @@ func init() {
 	beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "get:GetRepositoryImages")
 	//Pull -> 2. 获取 repository 的 tags 信息
 	beego.Router("/v1/repositories/:namespace/:repository/tags", &controllers.RepositoryController{}, "get:GetRepositoryTags")
+	//Pull -> 3. 获取 image 的 ancestry 信息
+	beego.Router("/v1/images/:image_id/ancestry", &controllers.ImageController{}, "get:GetImageAncestry")
+	//Pull -> 4. 获取 image 的 json 信息
+	beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "get:GetImageJSON")
+	//Pull -> 5. 获取 image 的 layer 文件
+	beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "get:GetImageLayer")
 
 	//Push Router Begin
 	//Push -> 1. 写入要上传的 Repository 的 JSON 信息，此 JSON 信息是一个包含所有 Image ID 的 JSON 字符串。
