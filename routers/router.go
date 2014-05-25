@@ -31,6 +31,8 @@ func init() {
 
 	//Pull -> 1. 获取 repository 的 images 信息
 	beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "get:GetRepositoryImages")
+	//Pull -> 2. 获取 repository 的 tags 信息
+	beego.Router("/v1/repositories/:namespace/:repository/tags", &controllers.RepositoryController{}, "get:GetRepositoryTags")
 
 	//Push Router Begin
 	//Push -> 1. 写入要上传的 Repository 的 JSON 信息，此 JSON 信息是一个包含所有 Image ID 的 JSON 字符串。

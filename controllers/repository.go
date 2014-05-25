@@ -329,10 +329,16 @@ func (this *RepositoryController) GetRepositoryImages() {
 
 		//操作正常的输出
 		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", token)
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", token)
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
 
 		this.Ctx.Output.Context.Output.SetStatus(200)
 		this.Ctx.Output.Context.Output.Body(imageIds)
 
 	}
+}
+
+func (this *RepositoryController) GetRepositoryTags() {
 
 }
