@@ -287,7 +287,7 @@ func (this *RepositoryController) GetRepositoryImages() {
 		var images []string
 		for _, tag := range tags {
 			image := &models.Image{ImageId: tag.ImageId}
-			has, err := models.Engine.Get(&image)
+			has, err := models.Engine.Get(image)
 
 			if has == false || err != nil {
 				this.Ctx.Output.Context.Output.SetStatus(400)
@@ -297,6 +297,9 @@ func (this *RepositoryController) GetRepositoryImages() {
 
 			if has == true {
 				var parents []string
+
+				beego.Trace(string(image.Id) + ":\n" + image.ParentJSON)
+
 				if err := json.Unmarshal([]byte(image.ParentJSON), &parents); err != nil {
 					this.Ctx.Output.Context.Output.SetStatus(400)
 					this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
@@ -316,9 +319,9 @@ func (this *RepositoryController) GetRepositoryImages() {
 			results = append(results, result)
 		}
 
-		beego.Trace(results)
-
 		imageIds, _ := json.Marshal(results)
+
+		beego.Trace("Image ID:" + string(imageIds))
 
 		//操作正常的输出
 		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
