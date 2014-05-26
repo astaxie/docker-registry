@@ -334,5 +334,54 @@ func (this *ImageController) GetImageJSON() {
 }
 
 func (this *ImageController) GetImageLayer() {
+	//判断用户的token是否可以操作
+	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
+	//显示两个 Token 系 docker client 的 Bug 。
+	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
+	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
+	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	beego.Trace("Token: " + authorizations[0])
+	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
 
+	user := &models.User{Username: username, Token: token}
+	has, err := models.Engine.Get(user)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(401)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+		return
+	}
+
+	imageId := string(this.Ctx.Input.Param(":image_id"))
+	image := &models.Image{ImageId: imageId}
+	has, err = models.Engine.Get(image)
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
+		return
+	}
+
+	if has == false {
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Could not find image record.\""))
+	} else {
+		//处理 Layer 文件保存的目录
+		basePath := utils.Cfg.MustValue("docker", "BasePath")
+		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, imageId)
+
+		if _, err := os.Stat(layerfile); err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(404)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Could not find image file.\""))
+		}
+
+		file, err := ioutil.ReadFile(layerfile)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Load layer file error.\""))
+		}
+
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/octet-stream")
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body(file)
+
+	}
 }
