@@ -267,25 +267,25 @@ func (this *ImageController) PutChecksum() {
 
 func (this *ImageController) GetImageAncestry() {
 	//判断用户的token是否可以操作
-	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
+	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=read
 	//显示两个 Token 系 docker client 的 Bug 。
 	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
-	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
-	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
-	beego.Trace("Token: " + authorizations[0])
-	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
+	// r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=read`)
+	// authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	// beego.Trace("Token: " + authorizations[0])
+	// token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
 
-	user := &models.User{Username: username, Token: token}
-	has, err := models.Engine.Get(user)
-	if has == false || err != nil {
-		this.Ctx.Output.Context.Output.SetStatus(401)
-		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-		return
-	}
+	// user := &models.User{Username: username, Token: token}
+	// has, err := models.Engine.Get(user)
+	// if has == false || err != nil {
+	// 	this.Ctx.Output.Context.Output.SetStatus(401)
+	// 	this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+	// 	return
+	// }
 
 	imageId := string(this.Ctx.Input.Param(":image_id"))
 	image := &models.Image{ImageId: imageId}
-	has, err = models.Engine.Get(image)
+	has, err := models.Engine.Get(image)
 	if has == false || err != nil {
 		this.Ctx.Output.Context.Output.SetStatus(400)
 		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
@@ -304,22 +304,22 @@ func (this *ImageController) GetImageJSON() {
 	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
 	//显示两个 Token 系 docker client 的 Bug 。
 	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
-	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
-	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
-	beego.Trace("Token: " + authorizations[0])
-	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
+	// r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
+	// authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	// beego.Trace("Token: " + authorizations[0])
+	// token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
 
-	user := &models.User{Username: username, Token: token}
-	has, err := models.Engine.Get(user)
-	if has == false || err != nil {
-		this.Ctx.Output.Context.Output.SetStatus(401)
-		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-		return
-	}
+	// user := &models.User{Username: username, Token: token}
+	// has, err := models.Engine.Get(user)
+	// if has == false || err != nil {
+	// 	this.Ctx.Output.Context.Output.SetStatus(401)
+	// 	this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+	// 	return
+	// }
 
 	imageId := string(this.Ctx.Input.Param(":image_id"))
 	image := &models.Image{ImageId: imageId}
-	has, err = models.Engine.Get(image)
+	has, err := models.Engine.Get(image)
 	if has == false || err != nil {
 		this.Ctx.Output.Context.Output.SetStatus(400)
 		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
@@ -338,22 +338,22 @@ func (this *ImageController) GetImageLayer() {
 	//Token 的样式类似于：Token Token signature=3d490a413351b26419beebf71b120759,repository="genedna/registry",access=write
 	//显示两个 Token 系 docker client 的 Bug 。
 	beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
-	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
-	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
-	beego.Trace("Token: " + authorizations[0])
-	token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
+	// r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
+	// authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	// beego.Trace("Token: " + authorizations[0])
+	// token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
 
-	user := &models.User{Username: username, Token: token}
-	has, err := models.Engine.Get(user)
-	if has == false || err != nil {
-		this.Ctx.Output.Context.Output.SetStatus(401)
-		this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-		return
-	}
+	// user := &models.User{Username: username, Token: token}
+	// has, err := models.Engine.Get(user)
+	// if has == false || err != nil {
+	// 	this.Ctx.Output.Context.Output.SetStatus(401)
+	// 	this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+	// 	return
+	// }
 
 	imageId := string(this.Ctx.Input.Param(":image_id"))
 	image := &models.Image{ImageId: imageId}
-	has, err = models.Engine.Get(image)
+	has, err := models.Engine.Get(image)
 	if has == false || err != nil {
 		this.Ctx.Output.Context.Output.SetStatus(400)
 		this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
