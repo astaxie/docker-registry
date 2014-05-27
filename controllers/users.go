@@ -35,13 +35,19 @@ func (this *UsersController) Prepare() {
 }
 
 func (this *UsersController) PostUsers() {
+
+  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
+  beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
+
   this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
   this.Ctx.Output.Context.Output.SetStatus(401)
   this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"We are limited beta testing now. Please contact Meaglith Ma <genedna@gmail.com> for beta account.\"}"))
 }
 
 func (this *UsersController) GetUsers() {
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
+  beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
 
   username, password, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
   if err != nil {
@@ -49,6 +55,8 @@ func (this *UsersController) GetUsers() {
     this.Ctx.Output.Body([]byte("\"Unauthorized\""))
     return
   }
+
+  beego.Trace("[Username & Password] " + username + " -> " + password)
 
   var has bool
   user := &models.User{Username: username, Password: password}
@@ -60,6 +68,7 @@ func (this *UsersController) GetUsers() {
     return
   }
 
+  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
   this.Ctx.Output.Context.Output.SetStatus(200)
   this.Ctx.Output.Context.Output.Body([]byte("{\"OK\"}"))
 }
