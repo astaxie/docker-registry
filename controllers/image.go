@@ -5,7 +5,6 @@ import (
   "fmt"
   "io/ioutil"
   "os"
-  "regexp"
   "strconv"
 
   "github.com/astaxie/beego"
@@ -20,48 +19,6 @@ type ImageController struct {
 func (this *ImageController) Prepare() {
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
-}
-
-//在 Push 的流程中，docker 客户端会先调用 GET /v1/images/:image_id/json 向服务器检查是否已经存在 JSON 信息。
-//如果存在了 JSON 信息，docker 客户端就认为是已经存在了 layer 数据，不再向服务器 PUT layer 的 JSON 信息和文件了。
-//如果不存在 JSON 信息，docker 客户端会先后执行 PUT /v1/images/:image_id/json 和 PUT /v1/images/:image_id/layer 。
-func (this *ImageController) GetImageJson() {
-
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
-  beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
-
-  //判断用户的token是否可以操作
-  r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=write`)
-  authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
-  beego.Trace("Token: " + authorizations[0])
-  token, _, username, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3]
-
-  user := &models.User{Username: username, Token: token}
-  has, err := models.Engine.Get(user)
-  if has == false || err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
-    return
-  }
-
-  //查找是否有指定的ImageID对应的JSON文件
-  image := &models.Image{ImageId: string(this.Ctx.Input.Param(":image_id"))}
-  has, err = models.Engine.Get(image)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("Search image error."))
-    return
-  }
-
-  if has == true {
-    this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-    this.Ctx.Output.Context.Output.Body([]byte(image.JSON))
-    return
-  } else {
-    this.Ctx.Output.Context.Output.SetStatus(404)
-    this.Ctx.Output.Context.Output.Body([]byte("Image not found."))
-    return
-  }
 }
 
 //向数据库写入 Layer 的 JSON 数据
@@ -354,6 +311,9 @@ func (this *ImageController) GetImageAncestry() {
   }
 }
 
+//在 Push 的流程中，docker 客户端会先调用 GET /v1/images/:image_id/json 向服务器检查是否已经存在 JSON 信息。
+//如果存在了 JSON 信息，docker 客户端就认为是已经存在了 layer 数据，不再向服务器 PUT layer 的 JSON 信息和文件了。
+//如果不存在 JSON 信息，docker 客户端会先后执行 PUT /v1/images/:image_id/json 和 PUT /v1/images/:image_id/layer 。
 func (this *ImageController) GetImageJSON() {
   beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
   beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
@@ -387,7 +347,7 @@ func (this *ImageController) GetImageJSON() {
   imageId := string(this.Ctx.Input.Param(":image_id"))
   image := &models.Image{ImageId: imageId}
   has, err = models.Engine.Get(image)
-  if has == false || err != nil {
+  if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Check the image error.\""))
     return
@@ -397,6 +357,11 @@ func (this *ImageController) GetImageJSON() {
     this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
     this.Ctx.Output.Context.Output.SetStatus(200)
     this.Ctx.Output.Context.Output.Body([]byte(image.JSON))
+    return
+  } else {
+    this.Ctx.Output.Context.Output.SetStatus(404)
+    this.Ctx.Output.Context.Output.Body([]byte("\"No image json.\""))
+    return
   }
 }
 

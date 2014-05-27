@@ -36,6 +36,7 @@ func init() {
   //Pull -> 3. 获取 image 的 ancestry 信息
   beego.Router("/v1/images/:image_id/ancestry", &controllers.ImageController{}, "get:GetImageAncestry")
   //Pull -> 4. 获取 image 的 json 信息
+  beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "get:GetImageJSON")
   beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "get:GetImageJSON")
   //Pull -> 5. 获取 image 的 layer 文件
   beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "get:GetImageLayer")
@@ -45,9 +46,7 @@ func init() {
   beego.Router("/v1/repositories/:namespace/:repo_name/", &controllers.RepositoryController{}, "put:PutRepository")
   beego.Router("/v1/repositories/:namespace/:repo_name", &controllers.RepositoryController{}, "put:PutRepository")
   //Push -> 2. 根据 Repository 的所有 Image 开始循环处理
-  //Push -> 2.1 根据 Image 的 ID 获取 Image 的 JSON 数据，如果返回 404 就要上传此 Image 的 JSON 数据和 Layer 文件
-  beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "get:GetImageJson")
-  beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "get:GetImageJson")
+  //Push -> 2.1 根据 Image 的 ID 获取 Image 的 JSON 数据，如果返回 404 就要上传此 Image 的 JSON 数据和 Layer 文件 同 Pull -> 4
   //Push -> 2.2 上传 Image 的 JSON 文件
   beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "put:PutImageJson")
   beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "put:PutImageJson")
