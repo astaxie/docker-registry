@@ -22,17 +22,17 @@ func init() {
 
   //根据 Router 的规则把此定义放在上部。
   //Push -> 3. 根据 Repository 的所有 Tag 信息循环写入所有的 Tag
-  beego.Router("/v1/repositories/:namespace/:repository/tags/:tag/", &controllers.RepositoryController{}, "put:PutTag")
-  beego.Router("/v1/repositories/:namespace/:repository/tags/:tag", &controllers.RepositoryController{}, "put:PutTag")
+  beego.Router("/v1/repositories/:namespace/:repo_name/tags/:tag/", &controllers.RepositoryController{}, "put:PutTag")
+  beego.Router("/v1/repositories/:namespace/:repo_name/tags/:tag", &controllers.RepositoryController{}, "put:PutTag")
 
   //Push -> 4. 最后执行，并没有上传任何有效数据
-  beego.Router("/v1/repositories/:namespace/:repository/images/", &controllers.RepositoryController{}, "put:PutRepositoryImages")
-  beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "put:PutRepositoryImages")
+  beego.Router("/v1/repositories/:namespace/:repo_name/images/", &controllers.RepositoryController{}, "put:PutRepositoryImages")
+  beego.Router("/v1/repositories/:namespace/:repo_name/images", &controllers.RepositoryController{}, "put:PutRepositoryImages")
 
   //Pull -> 1. 获取 repository 的 images 信息
-  beego.Router("/v1/repositories/:namespace/:repository/images", &controllers.RepositoryController{}, "get:GetRepositoryImages")
+  beego.Router("/v1/repositories/:namespace/:repo_name/images", &controllers.RepositoryController{}, "get:GetRepositoryImages")
   //Pull -> 2. 获取 repository 的 tags 信息
-  beego.Router("/v1/repositories/:namespace/:repository/tags", &controllers.RepositoryController{}, "get:GetRepositoryTags")
+  beego.Router("/v1/repositories/:namespace/:repo_name/tags", &controllers.RepositoryController{}, "get:GetRepositoryTags")
   //Pull -> 3. 获取 image 的 ancestry 信息
   beego.Router("/v1/images/:image_id/ancestry", &controllers.ImageController{}, "get:GetImageAncestry")
   //Pull -> 4. 获取 image 的 json 信息
