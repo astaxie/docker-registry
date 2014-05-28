@@ -167,7 +167,7 @@ func (this *RepositoryController) PutTag() {
     return
   }
 
-  tag.JSON = this.Ctx.Input.Header("User-Agent")
+  tag.Agent = this.Ctx.Input.Header("User-Agent")
 
   r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
   imageIds := r.FindStringSubmatch(string(this.Ctx.Input.CopyBody()))

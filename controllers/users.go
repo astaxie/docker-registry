@@ -62,10 +62,23 @@ func (this *UsersController) GetUsers() {
   user := &models.User{Username: username, Password: password}
   has, err = models.Engine.Get(user)
 
-  if has == false || err != nil {
+  if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
     this.Ctx.Output.Body([]byte("\"Unauthorized\""))
     return
+  }
+
+  if has == false {
+    this.Ctx.Output.Context.Output.SetStatus(404)
+    this.Ctx.Output.Body([]byte("\"No User\""))
+    return
+  }
+
+  if user.Actived == false {
+    this.Ctx.Output.Context.Output.SetStatus(401)
+    this.Ctx.Output.Body([]byte("\"Actived First!\""))
+    return
+
   }
 
   this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
