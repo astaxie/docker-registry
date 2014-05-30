@@ -1,4 +1,4 @@
-docker-registry [![Build Status](https://drone.io/github.com/dockboard/docker-registry/status.png)](https://drone.io/github.com/dockboard/docker-registry/latest)
+docker-registry
 ===============
 
 The dockboard's [docker-registry](https://github.com/dockboard/docker-registry) is a [Golang](http://golang.org) version what clone offical [docker-registry](https://github.com/dotcloud/docker-registry), and we add user manage, UI and more features. We will add more backend storage services support like [Qiniu](http://qiniu.com), [Aliyun OSS](http://www.aliyun.com/product/oss), [Baidu Storage](http://developer.baidu.com/cloud/stor), [Tencent COS](http://www.qcloud.com/product/product.php?item=cos) and [OpenStack Swift](http://docs.openstack.org/developer/swift).
