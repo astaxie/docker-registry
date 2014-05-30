@@ -37,7 +37,7 @@ func setEngine() {
 // InitDb initializes the database.
 func InitDb() {
 	setEngine()
-	err := Engine.Sync(new(User), new(Image), new(Repository), new(Tag))
+	err := Engine.Sync(new(User), new(Profile), new(Image), new(Repository), new(Tag), new(Comment), new(Star))
 	if err != nil {
 		log.Fatalf("models.init -> fail to sync database: %v", err)
 	}
