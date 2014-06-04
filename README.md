@@ -58,3 +58,47 @@ CREATE DATABASE `registry` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 GRANT ALL PRIVILEGES ON registry.* TO docker@localhost IDENTIFIED BY 'docker';
 FLUSH PRIVILEGES;
 ```
+
+Nginx Conf
+==========
+
+```
+upstream index_upstream {
+  server 127.0.0.1:9911;
+}
+
+server {
+  listen 80; 
+  server_name index.dockboard.org;
+  rewrite  ^/(.*)$  https://index.dockboard.org/$1  permanent;
+}
+
+server {
+  listen 443;
+
+  server_name index.dockboard.org;
+
+  access_log /var/log/nginx/index-dockboard.log;
+  error_log /var/log/nginx/index-dockboard-error.log;
+
+  ssl on; 
+  ssl_certificate /etc/nginx/ssl/index.dockboard/ssl-bundle.crt;
+  ssl_certificate_key /etc/nginx/ssl/index.dockboard/index_dockboard.key;
+
+  client_max_body_size 1024m;
+  chunked_transfer_encoding on; 
+
+  proxy_redirect     off;
+  proxy_set_header   X-Real-IP $remote_addr;
+  proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header   X-Forwarded-Proto $scheme;
+  proxy_set_header   Host $http_host;
+  proxy_set_header   X-NginX-Proxy true;
+  proxy_set_header   Connection ""; 
+  proxy_http_version 1.1;
+
+  location / { 
+    proxy_pass         http://index_upstream;
+  }
+}
+```
