@@ -68,7 +68,7 @@ upstream index_upstream {
 }
 
 server {
-  listen 80; 
+  listen 80;
   server_name index.dockboard.org;
   rewrite  ^/(.*)$  https://index.dockboard.org/$1  permanent;
 }
@@ -81,12 +81,12 @@ server {
   access_log /var/log/nginx/index-dockboard.log;
   error_log /var/log/nginx/index-dockboard-error.log;
 
-  ssl on; 
+  ssl on;
   ssl_certificate /etc/nginx/ssl/index.dockboard/ssl-bundle.crt;
   ssl_certificate_key /etc/nginx/ssl/index.dockboard/index_dockboard.key;
 
   client_max_body_size 1024m;
-  chunked_transfer_encoding on; 
+  chunked_transfer_encoding on;
 
   proxy_redirect     off;
   proxy_set_header   X-Real-IP $remote_addr;
@@ -94,10 +94,10 @@ server {
   proxy_set_header   X-Forwarded-Proto $scheme;
   proxy_set_header   Host $http_host;
   proxy_set_header   X-NginX-Proxy true;
-  proxy_set_header   Connection ""; 
+  proxy_set_header   Connection "";
   proxy_http_version 1.1;
 
-  location / { 
+  location / {
     proxy_pass         http://index_upstream;
   }
 }
