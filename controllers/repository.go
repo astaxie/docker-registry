@@ -45,20 +45,17 @@ type RepositoryController struct {
 func (this *RepositoryController) Prepare() {
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
   this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
-}
-
-func (this *RepositoryController) PutRepository() {
 
   beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
   beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
 
-  //Decode 后根据数据库判断用户是否存在和是否激活。
+  //判断用户的 Authorization 是否可以操作
   username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
 
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
     this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
+    this.StopRun()
   }
 
   beego.Trace("[Username & Password] " + username + " -> " + passwd)
@@ -66,17 +63,24 @@ func (this *RepositoryController) PutRepository() {
   user := &models.User{Username: username, Password: passwd}
   has, err := models.Engine.Get(user)
 
-  if has == false || err != nil {
+  if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
     this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
+    this.StopRun()
   }
 
-  if user.Actived == false {
+  if has == false || user.Actived == false {
     this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
-    return
+    this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+    this.StopRun()
   }
+
+  this.Data["user"] = user
+}
+
+func (this *RepositoryController) PutRepository() {
+
+  user := this.Data["user"].(models.User)
 
   //获取namespace/repository
   namespace := string(this.Ctx.Input.Param(":namespace"))
@@ -85,15 +89,15 @@ func (this *RepositoryController) PutRepository() {
   beego.Trace("[Namespace & Repository] " + namespace + " -> " + repository)
 
   //判断用户的username和namespace是否相同
-  if username != namespace {
+  if user.Username != namespace {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
-    return
+    this.StopRun()
   }
 
   //创建token并保存
   //需要加密的字符串为 UserName+UserPassword+时间戳
-  md5String := fmt.Sprintf("%v%v%v", username, passwd, string(time.Now().Unix()))
+  md5String := fmt.Sprintf("%v%v%v", user.Username, user.Password, string(time.Now().Unix()))
   h := md5.New()
   h.Write([]byte(md5String))
   signature := hex.EncodeToString(h.Sum(nil))
@@ -103,13 +107,13 @@ func (this *RepositoryController) PutRepository() {
 
   //保存Token
   user.Token = token
-  _, err = models.Engine.Id(user.Id).Cols("Token").Update(user)
+  _, err := models.Engine.Id(user.Id).Cols("Token").Update(user)
 
   if err != nil {
     beego.Trace(err)
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
-    return
+    this.StopRun()
   }
 
   //创建或更新 Repository 数据
@@ -117,11 +121,11 @@ func (this *RepositoryController) PutRepository() {
   beego.Trace("[Request Body] " + string(this.Ctx.Input.CopyBody()))
 
   repo := &models.Repository{Namespace: namespace, Repository: repository}
-  has, err = models.Engine.Get(repo)
+  has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    return
+    this.StopRun()
   }
 
   repo.JSON = string(this.Ctx.Input.CopyBody())
@@ -131,14 +135,14 @@ func (this *RepositoryController) PutRepository() {
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository JSON data error.\""))
-      return
+      this.StopRun()
     }
   } else {
     _, err := models.Engine.Insert(repo)
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error: \"" + err.Error()))
-      return
+      this.StopRun()
     }
   }
 
@@ -166,7 +170,7 @@ func (this *RepositoryController) PutTag() {
   if has == false || err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Unknow namespace and repository.\""))
-    return
+    this.StopRun()
   }
 
   tag := &models.Tag{Name: this.Ctx.Input.Param(":tag"), Repository: repository.Id}
@@ -174,7 +178,7 @@ func (this *RepositoryController) PutTag() {
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Search tag encounter error.\""))
-    return
+    this.StopRun()
   }
 
   tag.Agent = this.Ctx.Input.Header("User-Agent")
@@ -189,14 +193,14 @@ func (this *RepositoryController) PutTag() {
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Update the tag data error.\""))
-      return
+      this.StopRun()
     }
   } else {
     _, err := models.Engine.Insert(tag)
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Create the tag record error.\""))
-      return
+      this.StopRun()
     }
   }
 
@@ -219,35 +223,6 @@ func (this *RepositoryController) PutRepositoryImages() {
 
 func (this *RepositoryController) GetRepositoryImages() {
 
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
-  beego.Trace("Authorization" + this.Ctx.Input.Header("Authorization"))
-
-  //Decode 后根据数据库判断用户是否存在和是否激活。
-  username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
-
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
-
-  beego.Trace("Decode Basic Auth: " + username + " " + passwd)
-
-  user := &models.User{Username: username, Password: passwd}
-  has, err := models.Engine.Get(user)
-
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
-
-  if user.Actived == false {
-    this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
-    return
-  }
-
   //获取namespace/repository
   namespace := string(this.Ctx.Input.Param(":namespace"))
   repository := string(this.Ctx.Input.Param(":repo_name"))
@@ -257,17 +232,17 @@ func (this *RepositoryController) GetRepositoryImages() {
 
   //查询 Repository 数据
   repo := &models.Repository{Namespace: namespace, Repository: repository}
-  has, err = models.Engine.Get(repo)
+  has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    return
+    this.StopRun()
   }
 
   if has == false {
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
-    return
+    this.StopRun()
   } else {
 
     beego.Trace("[Repository] " + string(repo.Id))
@@ -280,13 +255,13 @@ func (this *RepositoryController) GetRepositoryImages() {
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
-      return
+      this.StopRun()
     }
 
     if len(tags) == 0 {
       this.Ctx.Output.Context.Output.SetStatus(404)
       this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
-      return
+      this.StopRun()
     }
 
     //根据 Tag 的 Image ID 值查询 ParentJSON 数据，然后同一在一个数组里面去重。
@@ -298,7 +273,7 @@ func (this *RepositoryController) GetRepositoryImages() {
       if has == false || err != nil {
         this.Ctx.Output.Context.Output.SetStatus(400)
         this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
-        return
+        this.StopRun()
       }
 
       if has == true {
@@ -309,7 +284,7 @@ func (this *RepositoryController) GetRepositoryImages() {
         if err := json.Unmarshal([]byte(image.ParentJSON), &parents); err != nil {
           this.Ctx.Output.Context.Output.SetStatus(400)
           this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
-          return
+          this.StopRun()
         }
         images = append(parents, images...)
       }
@@ -341,33 +316,6 @@ func (this *RepositoryController) GetRepositoryImages() {
 
 func (this *RepositoryController) GetRepositoryTags() {
 
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
-  beego.Trace("Authorization: " + this.Ctx.Input.Header("Authorization"))
-
-  //Decode 后根据数据库判断用户是否存在和是否激活。
-  username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
-  beego.Trace("Decode Basic Auth: " + username + " " + passwd)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
-
-  user := &models.User{Username: username, Password: passwd}
-  has, err := models.Engine.Get(user)
-
-  if has == false || err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    return
-  }
-
-  if user.Actived == false {
-    this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not actived."))
-    return
-  }
-
   //获取namespace/repository
   namespace := string(this.Ctx.Input.Param(":namespace"))
   repository := string(this.Ctx.Input.Param(":repo_name"))
@@ -377,18 +325,18 @@ func (this *RepositoryController) GetRepositoryTags() {
 
   //查询 Repository 数据
   repo := &models.Repository{Namespace: namespace, Repository: repository}
-  has, err = models.Engine.Get(repo)
+  has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    return
+    this.StopRun()
   }
 
   if has == false {
 
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
-    return
+    this.StopRun()
 
   } else {
 
@@ -401,13 +349,13 @@ func (this *RepositoryController) GetRepositoryTags() {
     if err != nil {
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
-      return
+      this.StopRun()
     }
 
     if len(tags) == 0 {
       this.Ctx.Output.Context.Output.SetStatus(404)
       this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
-      return
+      this.StopRun()
     }
 
     results := make(map[string]string)
