@@ -55,8 +55,8 @@ func init() {
   beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "put:PutImageJson")
   beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "put:PutImageJson")
   //Push -> 2.3 上传 Image 的 Layer 文件
-  beego.Router("/v1/images/:image_id/layer/", &controllers.ImageController{}, "put:PutImageIdLayer")
-  beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "put:PutImageIdLayer")
+  beego.Router("/v1/images/:image_id/layer/", &controllers.ImageController{}, "put:PutImageLayer")
+  beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "put:PutImageLayer")
   //Push -> 2.4 上传 Image 的 Checksum 文件
   beego.Router("/v1/images/:image_id/checksum/", &controllers.ImageController{}, "put:PutChecksum")
   beego.Router("/v1/images/:image_id/checksum", &controllers.ImageController{}, "put:PutChecksum")

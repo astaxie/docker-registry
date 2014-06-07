@@ -5,6 +5,7 @@ import (
   "fmt"
   "io/ioutil"
   "os"
+  "regexp"
   "strconv"
 
   "github.com/astaxie/beego"
@@ -24,30 +25,54 @@ func (this *ImageController) Prepare() {
   beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
   beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
 
-  //判断用户的 Authorization 是否可以操作
-  username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+  r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=([[:alnum:]]+)`)
+  authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
 
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    this.StopRun()
+  if len(authorizations) == 5 {
+    token, _, username, _, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
+
+    user := &models.User{Username: username, Token: token}
+    has, err := models.Engine.Get(user)
+
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
+      this.StopRun()
+    }
+
+    if has == false || user.Actived == false {
+      this.Ctx.Output.Context.Output.SetStatus(403)
+      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+      this.StopRun()
+    }
   }
 
-  beego.Trace("[Username & Password] " + username + " -> " + passwd)
+  if len(authorizations) == 0 {
+    //判断用户的 Authorization 是否可以操作
+    username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
 
-  user := &models.User{Username: username, Password: passwd}
-  has, err := models.Engine.Get(user)
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+      this.StopRun()
+    }
 
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    this.StopRun()
-  }
+    beego.Trace("[Username & Password] " + username + " -> " + passwd)
 
-  if has == false || user.Actived == false {
-    this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
-    this.StopRun()
+    user := &models.User{Username: username, Password: passwd}
+    has, err := models.Engine.Get(user)
+
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+      this.StopRun()
+    }
+
+    if has == false || user.Actived == false {
+      this.Ctx.Output.Context.Output.SetStatus(403)
+      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+      this.StopRun()
+    }
   }
 }
 
@@ -123,7 +148,7 @@ func (this *ImageController) PutImageJson() {
 }
 
 //向本地硬盘写入 Layer 的文件
-func (this *ImageController) PutImageIdLayer() {
+func (this *ImageController) PutImageLayer() {
 
   //查询是否存在 image 的数据库记录
   imageId := string(this.Ctx.Input.Param(":image_id"))

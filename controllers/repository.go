@@ -49,38 +49,62 @@ func (this *RepositoryController) Prepare() {
   beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
   beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
 
-  //判断用户的 Authorization 是否可以操作
-  username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+  r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=([[:alnum:]]+)`)
+  authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
 
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    this.StopRun()
+  if len(authorizations) == 5 {
+    token, _, username, _, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
+
+    user := &models.User{Username: username, Token: token}
+    has, err := models.Engine.Get(user)
+
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
+      this.StopRun()
+    }
+
+    if has == false || user.Actived == false {
+      this.Ctx.Output.Context.Output.SetStatus(403)
+      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+      this.StopRun()
+    }
+
+    this.Data["user"] = user
+
+  } else {
+    username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+      this.StopRun()
+    }
+
+    beego.Trace("[Username & Password] " + username + " -> " + passwd)
+
+    user := &models.User{Username: username, Password: passwd}
+    has, err := models.Engine.Get(user)
+
+    if err != nil {
+      this.Ctx.Output.Context.Output.SetStatus(401)
+      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+      this.StopRun()
+    }
+
+    if has == false || user.Actived == false {
+      this.Ctx.Output.Context.Output.SetStatus(403)
+      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+      this.StopRun()
+    }
+
+    this.Data["user"] = user
   }
-
-  beego.Trace("[Username & Password] " + username + " -> " + passwd)
-
-  user := &models.User{Username: username, Password: passwd}
-  has, err := models.Engine.Get(user)
-
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(401)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-    this.StopRun()
-  }
-
-  if has == false || user.Actived == false {
-    this.Ctx.Output.Context.Output.SetStatus(403)
-    this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
-    this.StopRun()
-  }
-
-  this.Data["user"] = user
 }
 
 func (this *RepositoryController) PutRepository() {
 
-  user := this.Data["user"].(models.User)
+  user := this.Data["user"].(*models.User)
 
   //获取namespace/repository
   namespace := string(this.Ctx.Input.Param(":namespace"))
@@ -131,12 +155,19 @@ func (this *RepositoryController) PutRepository() {
   repo.JSON = string(this.Ctx.Input.CopyBody())
 
   if has == true {
+
     _, err := models.Engine.Id(repo.Id).Cols("JSON").Update(repo)
+
     if err != nil {
+      beego.Trace("[Update Repository Error] " + namespace + "/" + repository)
+
       this.Ctx.Output.Context.Output.SetStatus(400)
       this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository JSON data error.\""))
       this.StopRun()
     }
+
+    beego.Trace("[Update Repository] " + namespace + "/" + repository)
+
   } else {
     _, err := models.Engine.Insert(repo)
     if err != nil {
@@ -144,7 +175,10 @@ func (this *RepositoryController) PutRepository() {
       this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error: \"" + err.Error()))
       this.StopRun()
     }
+    beego.Trace("[Insert Repository] " + namespace + "/" + repository)
   }
+
+  beego.Trace("[Set Reponse HEADER]")
 
   //操作正常的输出
   this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
