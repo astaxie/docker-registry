@@ -53,7 +53,7 @@ func (this *UsersController) GetUsers() {
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401) //根据 Specification ，解码 Basic Authorization 数据失败也认为是 401 错误。
     this.Ctx.Output.Body([]byte("\"Unauthorized\""))
-    return
+    this.StopRun()
   }
 
   beego.Trace("[Username & Password] " + username + " -> " + password)
@@ -65,20 +65,19 @@ func (this *UsersController) GetUsers() {
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(401)
     this.Ctx.Output.Body([]byte("\"Unauthorized\""))
-    return
+    this.StopRun()
   }
 
   if has == false {
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Body([]byte("\"No User\""))
-    return
+    this.StopRun()
   }
 
   if user.Actived == false {
     this.Ctx.Output.Context.Output.SetStatus(401)
     this.Ctx.Output.Body([]byte("\"Actived First!\""))
-    return
-
+    this.StopRun()
   }
 
   this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
