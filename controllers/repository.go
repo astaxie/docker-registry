@@ -192,7 +192,6 @@ func (this *RepositoryController) PutRepository() {
 
 func (this *RepositoryController) PutTag() {
 
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
   beego.Trace("Namespace: " + this.Ctx.Input.Param(":namespace"))
   beego.Trace("Repository: " + this.Ctx.Input.Param(":repo_name"))
   beego.Trace("Tag: " + this.Ctx.Input.Param(":tag"))
@@ -245,9 +244,50 @@ func (this *RepositoryController) PutTag() {
   this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
-//docker client 没有上传完整的 checksum ，如何进行完整性检查？
+//根据最初上传的 Image 数据和每个 Image 的上传信息确定是否上传成功
 func (this *RepositoryController) PutRepositoryImages() {
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
+
+  //获取namespace/repository
+  namespace := string(this.Ctx.Input.Param(":namespace"))
+  repository := string(this.Ctx.Input.Param(":repo_name"))
+
+  beego.Trace("[Namespace] " + namespace)
+  beego.Trace("[Repository] " + repository)
+
+  repo := &models.Repository{Namespace: namespace, Repository: repository} //查询时要求已经是完成上传的 Repository
+  has, err := models.Engine.Get(repo)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(400)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+    this.StopRun()
+  }
+
+  if has == false {
+    this.Ctx.Output.Context.Output.SetStatus(404)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+    this.StopRun()
+  } else {
+    //检查 Repository 的所有 Image Layer 是否都上传完成。
+    var images []map[string]string
+    uploaded := true
+
+    json.Unmarshal([]byte(repo.JSON), &images)
+
+    for _, i := range(images) {
+      image := &models.Image{ImageId: i["id"]}
+      if image.Uploaded == false {
+        uploaded = false
+        break
+      }
+    }
+
+    if uploaded == false {
+      this.Ctx.Output.Context.Output.SetStatus(400)
+      this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload not complete, please try again.\""))
+      this.StopRun()
+    }
+  }
+
   //操作正常的输出
   this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
@@ -265,7 +305,7 @@ func (this *RepositoryController) GetRepositoryImages() {
   beego.Trace("[Repository] " + repository)
 
   //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository}
+  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true} //查询时要求已经是完成上传的 Repository
   has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -280,7 +320,6 @@ func (this *RepositoryController) GetRepositoryImages() {
   } else {
 
     beego.Trace("[Repository] " + string(repo.Id))
-    beego.Trace(repo)
 
     //存在 Repository 数据，查询所有的 Tag 数据。
     tags := make([]models.Tag, 0)
@@ -358,7 +397,7 @@ func (this *RepositoryController) GetRepositoryTags() {
   beego.Trace("[Repository] " + repository)
 
   //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository}
+  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true}
   has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)

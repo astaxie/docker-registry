@@ -79,10 +79,10 @@ func (this *ImageController) Prepare() {
 //在 Push 的流程中，docker 客户端会先调用 GET /v1/images/:image_id/json 向服务器检查是否已经存在 JSON 信息。
 //如果存在了 JSON 信息，docker 客户端就认为是已经存在了 layer 数据，不再向服务器 PUT layer 的 JSON 信息和文件了。
 //如果不存在 JSON 信息，docker 客户端会先后执行 PUT /v1/images/:image_id/json 和 PUT /v1/images/:image_id/layer 。
-func (this *ImageController) GetImageJson() {
+func (this *ImageController) GetImageJSON() {
 
   imageId := string(this.Ctx.Input.Param(":image_id"))
-  image := &models.Image{ImageId: imageId}
+  image := &models.Image{ImageId: imageId, Uploaded: true} //获取 Image 的 JSON 信息时要查询是上传完成的
   has, err := models.Engine.Get(image)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -220,6 +220,8 @@ func (this *ImageController) PutChecksum() {
   image.Checksum = this.Ctx.Input.Header("X-Docker-Checksum")
   image.Payload = this.Ctx.Input.Header("X-Docker-Checksum-Payload")
   image.CheckSumed = true
+  //TODO 检查上传的 Layer 文件的 SHA256 和传上来的 Checksum 的值是否一致？
+  image.Uploaded = true
 
   //计算这个Layer的父子结构
   var imageJSON map[string]interface{}
