@@ -39,8 +39,8 @@ func init() {
   beego.Router("/v1/images/:image_id/ancestry/", &controllers.ImageController{}, "get:GetImageAncestry")
   beego.Router("/v1/images/:image_id/ancestry", &controllers.ImageController{}, "get:GetImageAncestry")
   //Pull -> 4. 获取 image 的 json 信息
-  beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "get:GetImageJson")
-  beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "get:GetImageJson")
+  beego.Router("/v1/images/:image_id/json/", &controllers.ImageController{}, "get:GetImageJSON")
+  beego.Router("/v1/images/:image_id/json", &controllers.ImageController{}, "get:GetImageJSON")
   //Pull -> 5. 获取 image 的 layer 文件
   beego.Router("/v1/images/:image_id/layer/", &controllers.ImageController{}, "get:GetImageLayer")
   beego.Router("/v1/images/:image_id/layer", &controllers.ImageController{}, "get:GetImageLayer")
