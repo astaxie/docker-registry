@@ -254,7 +254,7 @@ func (this *RepositoryController) PutRepositoryImages() {
   beego.Trace("[Namespace] " + namespace)
   beego.Trace("[Repository] " + repository)
 
-  repo := &models.Repository{Namespace: namespace, Repository: repository} //查询时要求已经是完成上传的 Repository
+  repo := &models.Repository{Namespace: namespace, Repository: repository}
   has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -270,14 +270,34 @@ func (this *RepositoryController) PutRepositoryImages() {
     //检查 Repository 的所有 Image Layer 是否都上传完成。
     var images []map[string]string
     uploaded := true
+    checksumed := true
 
     json.Unmarshal([]byte(repo.JSON), &images)
 
-    for _, i := range(images) {
+    for _, i := range images {
       image := &models.Image{ImageId: i["id"]}
-      if image.Uploaded == false {
-        uploaded = false
-        break
+      has, err := models.Engine.Get(image)
+      if err != nil {
+        this.Ctx.Output.Context.Output.SetStatus(400)
+        this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
+        this.StopRun()
+      }
+
+      if has == false {
+        this.Ctx.Output.Context.Output.SetStatus(404)
+        this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found image.\""))
+        this.StopRun()
+      } else {
+
+        if image.Uploaded == false {
+          uploaded = false
+          break
+        }
+
+        if image.CheckSumed == false {
+          checksumed = false
+          break
+        }
       }
     }
 
@@ -286,6 +306,28 @@ func (this *RepositoryController) PutRepositoryImages() {
       this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload not complete, please try again.\""))
       this.StopRun()
     }
+
+    if checksumed == false {
+      this.Ctx.Output.Context.Output.SetStatus(400)
+      this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload checksumed error, please try again.\""))
+      this.StopRun()
+    }
+  }
+
+  repo.Uploaded = true
+  _, err = models.Engine.Id(repo.Id).Cols("Uploaded").Update(repo)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(400)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository uploaded flag error, please try again.\""))
+    this.StopRun()
+  }
+
+  repo.CheckSumed = true
+  _, err = models.Engine.Id(repo.Id).Cols("CheckSumed").Update(repo)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(400)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository uploaded flag error, please try again.\""))
+    this.StopRun()
   }
 
   //操作正常的输出
@@ -305,7 +347,7 @@ func (this *RepositoryController) GetRepositoryImages() {
   beego.Trace("[Repository] " + repository)
 
   //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true} //查询时要求已经是完成上传的 Repository
+  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true} //查询时要求已经是完成上传的 Repository
   has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -397,7 +439,7 @@ func (this *RepositoryController) GetRepositoryTags() {
   beego.Trace("[Repository] " + repository)
 
   //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true}
+  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true}
   has, err := models.Engine.Get(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)

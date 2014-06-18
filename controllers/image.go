@@ -29,7 +29,7 @@ func (this *ImageController) Prepare() {
   authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
 
   if len(authorizations) == 5 {
-    token, _, username, _, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
+    token, _, username, _, access := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
 
     user := &models.User{Username: username, Token: token}
     has, err := models.Engine.Get(user)
@@ -45,6 +45,9 @@ func (this *ImageController) Prepare() {
       this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
       this.StopRun()
     }
+
+    this.Data["user"] = user
+    this.Data["access"] = access
   }
 
   if len(authorizations) == 0 {
@@ -73,6 +76,8 @@ func (this *ImageController) Prepare() {
       this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
       this.StopRun()
     }
+
+    this.Data["user"] = user
   }
 }
 
@@ -82,7 +87,7 @@ func (this *ImageController) Prepare() {
 func (this *ImageController) GetImageJSON() {
 
   imageId := string(this.Ctx.Input.Param(":image_id"))
-  image := &models.Image{ImageId: imageId, Uploaded: true} //获取 Image 的 JSON 信息时要查询是上传完成的
+  image := &models.Image{ImageId: imageId, Uploaded: true, CheckSumed: true}
   has, err := models.Engine.Get(image)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -185,7 +190,7 @@ func (this *ImageController) PutImageLayer() {
 
   //更新Image记录
   image.Uploaded = true
-  _, err = models.Engine.Id(image.Id).Update(image)
+  _, err = models.Engine.Id(image.Id).Cols("Uploaded").Update(image)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"Update the image upload status error.\"}"))
@@ -217,11 +222,14 @@ func (this *ImageController) PutChecksum() {
     this.StopRun()
   }
 
-  image.Checksum = this.Ctx.Input.Header("X-Docker-Checksum")
-  image.Payload = this.Ctx.Input.Header("X-Docker-Checksum-Payload")
-  image.CheckSumed = true
   //TODO 检查上传的 Layer 文件的 SHA256 和传上来的 Checksum 的值是否一致？
-  image.Uploaded = true
+  image.CheckSumed = true
+  _, err = models.Engine.Id(image.Id).Cols("CheckSumed").Update(image)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(400)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update the image checksum error.\""))
+    this.StopRun()
+  }
 
   //计算这个Layer的父子结构
   var imageJSON map[string]interface{}
@@ -259,7 +267,10 @@ func (this *ImageController) PutChecksum() {
   parentJSON, _ := json.Marshal(parents)
   image.ParentJSON = string(parentJSON)
 
-  _, err = models.Engine.Id(image.Id).Update(image)
+  image.Checksum = this.Ctx.Input.Header("X-Docker-Checksum")
+  image.Payload = this.Ctx.Input.Header("X-Docker-Checksum-Payload")
+
+  _, err = models.Engine.Update(image)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
     this.Ctx.Output.Context.Output.Body([]byte("\"Update the image checksum error.\""))
@@ -275,7 +286,7 @@ func (this *ImageController) PutChecksum() {
 func (this *ImageController) GetImageAncestry() {
 
   imageId := string(this.Ctx.Input.Param(":image_id"))
-  image := &models.Image{ImageId: imageId}
+  image := &models.Image{ImageId: imageId, Uploaded: true, CheckSumed: true}
   has, err := models.Engine.Get(image)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -295,7 +306,7 @@ func (this *ImageController) GetImageAncestry() {
 func (this *ImageController) GetImageLayer() {
 
   imageId := string(this.Ctx.Input.Param(":image_id"))
-  image := &models.Image{ImageId: imageId}
+  image := &models.Image{ImageId: imageId, Uploaded: true, CheckSumed: true}
   has, err := models.Engine.Get(image)
   if has == false || err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
