@@ -26,479 +26,487 @@ Docker Push & Pull
 package controllers
 
 import (
-  "crypto/md5"
-  "encoding/hex"
-  "encoding/json"
-  "fmt"
-  "regexp"
-  "time"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"time"
 
-  "github.com/astaxie/beego"
-  "github.com/dockboard/docker-registry/models"
-  "github.com/dockboard/docker-registry/utils"
+	"github.com/astaxie/beego"
+	"github.com/dockboard/docker-registry/models"
+	"github.com/dockboard/docker-registry/utils"
 )
 
 type RepositoryController struct {
-  beego.Controller
+	beego.Controller
+}
+
+func (r *RepositoryController) URLMapping() {
+	r.Mapping("PutTag", r.PutTag)
+	r.Mapping("PutRepositoryImages", r.PutRepositoryImages)
+	r.Mapping("GetRepositoryImages", r.GetRepositoryImages)
+	r.Mapping("GetRepositoryTags", r.GetRepositoryTags)
+	r.Mapping("PutRepository", r.PutRepository)
 }
 
 func (this *RepositoryController) Prepare() {
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Version", utils.Cfg.MustValue("docker", "Version"))
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Registry-Config", utils.Cfg.MustValue("docker", "Config"))
 
-  beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
-  beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
+	beego.Trace(this.Ctx.Request.Method + " -> " + this.Ctx.Request.URL.String())
+	beego.Trace("Authorization:" + this.Ctx.Input.Header("Authorization"))
 
-  r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=([[:alnum:]]+)`)
-  authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
+	r, _ := regexp.Compile(`Token signature=([[:alnum:]]+),repository="([[:alnum:]]+)/([[:alnum:]]+)",access=([[:alnum:]]+)`)
+	authorizations := r.FindStringSubmatch(this.Ctx.Input.Header("Authorization"))
 
-  if len(authorizations) == 5 {
-    token, _, username, _, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
+	if len(authorizations) == 5 {
+		token, _, username, _, _ := authorizations[0], authorizations[1], authorizations[2], authorizations[3], authorizations[4]
 
-    user := &models.User{Username: username, Token: token}
-    has, err := models.Engine.Get(user)
+		user := &models.User{Username: username, Token: token}
+		has, err := models.Engine.Get(user)
 
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(401)
-      this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
-      this.StopRun()
-    }
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(401)
+			this.Ctx.Output.Context.Output.Body([]byte("{\"Unauthorized\"}"))
+			this.StopRun()
+		}
 
-    if has == false || user.Actived == false {
-      this.Ctx.Output.Context.Output.SetStatus(403)
-      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
-      this.StopRun()
-    }
+		if has == false || user.Actived == false {
+			this.Ctx.Output.Context.Output.SetStatus(403)
+			this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+			this.StopRun()
+		}
 
-    this.Data["user"] = user
+		this.Data["user"] = user
 
-  } else {
-    username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
+	} else {
+		username, passwd, err := utils.DecodeBasicAuth(this.Ctx.Input.Header("Authorization"))
 
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(401)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-      this.StopRun()
-    }
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(401)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+			this.StopRun()
+		}
 
-    beego.Trace("[Username & Password] " + username + " -> " + passwd)
+		beego.Trace("[Username & Password] " + username + " -> " + passwd)
 
-    user := &models.User{Username: username, Password: passwd}
-    has, err := models.Engine.Get(user)
+		user := &models.User{Username: username, Password: passwd}
+		has, err := models.Engine.Get(user)
 
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(401)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
-      this.StopRun()
-    }
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(401)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Unauthorized\""))
+			this.StopRun()
+		}
 
-    if has == false || user.Actived == false {
-      this.Ctx.Output.Context.Output.SetStatus(403)
-      this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
-      this.StopRun()
-    }
+		if has == false || user.Actived == false {
+			this.Ctx.Output.Context.Output.SetStatus(403)
+			this.Ctx.Output.Context.Output.Body([]byte("User is not exist or not actived."))
+			this.StopRun()
+		}
 
-    this.Data["user"] = user
-  }
+		this.Data["user"] = user
+	}
 }
 
 func (this *RepositoryController) PutRepository() {
 
-  user := this.Data["user"].(*models.User)
+	user := this.Data["user"].(*models.User)
 
-  //获取namespace/repository
-  namespace := string(this.Ctx.Input.Param(":namespace"))
-  repository := string(this.Ctx.Input.Param(":repo_name"))
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
 
-  beego.Trace("[Namespace & Repository] " + namespace + " -> " + repository)
+	beego.Trace("[Namespace & Repository] " + namespace + " -> " + repository)
 
-  //判断用户的username和namespace是否相同
-  if user.Username != namespace {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
-    this.StopRun()
-  }
+	//判断用户的username和namespace是否相同
+	if user.Username != namespace {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"username != namespace\""))
+		this.StopRun()
+	}
 
-  //创建token并保存
-  //需要加密的字符串为 UserName+UserPassword+时间戳
-  md5String := fmt.Sprintf("%v%v%v", user.Username, user.Password, string(time.Now().Unix()))
-  h := md5.New()
-  h.Write([]byte(md5String))
-  signature := hex.EncodeToString(h.Sum(nil))
-  token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
+	//创建token并保存
+	//需要加密的字符串为 UserName+UserPassword+时间戳
+	md5String := fmt.Sprintf("%v%v%v", user.Username, user.Password, string(time.Now().Unix()))
+	h := md5.New()
+	h.Write([]byte(md5String))
+	signature := hex.EncodeToString(h.Sum(nil))
+	token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=write", signature, namespace, repository)
 
-  beego.Trace("[Token] " + token)
+	beego.Trace("[Token] " + token)
 
-  //保存Token
-  user.Token = token
-  _, err := models.Engine.Id(user.Id).Cols("Token").Update(user)
+	//保存Token
+	user.Token = token
+	_, err := models.Engine.Id(user.Id).Cols("Token").Update(user)
 
-  if err != nil {
-    beego.Trace(err)
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
-    this.StopRun()
-  }
+	if err != nil {
+		beego.Trace(err)
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update token error.\""))
+		this.StopRun()
+	}
 
-  //创建或更新 Repository 数据
-  //也可以采用 ioutil.ReadAll(this.Ctx.Request.Body) 的方式读取 body 数据
-  beego.Trace("[Request Body] " + string(this.Ctx.Input.CopyBody()))
+	//创建或更新 Repository 数据
+	//也可以采用 ioutil.ReadAll(this.Ctx.Request.Body) 的方式读取 body 数据
+	beego.Trace("[Request Body] " + string(this.Ctx.Input.CopyBody()))
 
-  repo := &models.Repository{Namespace: namespace, Repository: repository}
-  has, err := models.Engine.Get(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    this.StopRun()
-  }
+	repo := &models.Repository{Namespace: namespace, Repository: repository}
+	has, err := models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		this.StopRun()
+	}
 
-  repo.JSON = string(this.Ctx.Input.CopyBody())
+	repo.JSON = string(this.Ctx.Input.CopyBody())
 
-  if has == true {
+	if has == true {
 
-    _, err := models.Engine.Id(repo.Id).Cols("JSON").Update(repo)
+		_, err := models.Engine.Id(repo.Id).Cols("JSON").Update(repo)
 
-    if err != nil {
-      beego.Trace("[Update Repository Error] " + namespace + "/" + repository)
+		if err != nil {
+			beego.Trace("[Update Repository Error] " + namespace + "/" + repository)
 
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository JSON data error.\""))
-      this.StopRun()
-    }
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository JSON data error.\""))
+			this.StopRun()
+		}
 
-    beego.Trace("[Update Repository] " + namespace + "/" + repository)
+		beego.Trace("[Update Repository] " + namespace + "/" + repository)
 
-  } else {
-    _, err := models.Engine.Insert(repo)
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error: \"" + err.Error()))
-      this.StopRun()
-    }
-    beego.Trace("[Insert Repository] " + namespace + "/" + repository)
-  }
+	} else {
+		_, err := models.Engine.Insert(repo)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Create the repository record error: \"" + err.Error()))
+			this.StopRun()
+		}
+		beego.Trace("[Insert Repository] " + namespace + "/" + repository)
+	}
 
-  beego.Trace("[Set Reponse HEADER]")
+	beego.Trace("[Set Reponse HEADER]")
 
-  //操作正常的输出
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", token)
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", token)
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Token", token)
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("WWW-Authenticate", token)
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
 
-  this.Ctx.Output.Context.Output.SetStatus(200)
-  this.Ctx.Output.Context.Output.Body([]byte("\"\""))
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
 func (this *RepositoryController) PutTag() {
 
-  beego.Trace("Namespace: " + this.Ctx.Input.Param(":namespace"))
-  beego.Trace("Repository: " + this.Ctx.Input.Param(":repo_name"))
-  beego.Trace("Tag: " + this.Ctx.Input.Param(":tag"))
-  beego.Trace("User-Agent: " + this.Ctx.Input.Header("User-Agent"))
+	beego.Trace("Namespace: " + this.Ctx.Input.Param(":namespace"))
+	beego.Trace("Repository: " + this.Ctx.Input.Param(":repo_name"))
+	beego.Trace("Tag: " + this.Ctx.Input.Param(":tag"))
+	beego.Trace("User-Agent: " + this.Ctx.Input.Header("User-Agent"))
 
-  repository := &models.Repository{Namespace: this.Ctx.Input.Param(":namespace"), Repository: this.Ctx.Input.Param(":repo_name")}
-  has, err := models.Engine.Get(repository)
+	repository := &models.Repository{Namespace: this.Ctx.Input.Param(":namespace"), Repository: this.Ctx.Input.Param(":repo_name")}
+	has, err := models.Engine.Get(repository)
 
-  if has == false || err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Unknow namespace and repository.\""))
-    this.StopRun()
-  }
+	if has == false || err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Unknow namespace and repository.\""))
+		this.StopRun()
+	}
 
-  tag := &models.Tag{Name: this.Ctx.Input.Param(":tag"), Repository: repository.Id}
-  has, err = models.Engine.Get(tag)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Search tag encounter error.\""))
-    this.StopRun()
-  }
+	tag := &models.Tag{Name: this.Ctx.Input.Param(":tag"), Repository: repository.Id}
+	has, err = models.Engine.Get(tag)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search tag encounter error.\""))
+		this.StopRun()
+	}
 
-  tag.Agent = this.Ctx.Input.Header("User-Agent")
+	tag.Agent = this.Ctx.Input.Header("User-Agent")
 
-  r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
-  imageIds := r.FindStringSubmatch(string(this.Ctx.Input.CopyBody()))
+	r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
+	imageIds := r.FindStringSubmatch(string(this.Ctx.Input.CopyBody()))
 
-  tag.ImageId = imageIds[1]
+	tag.ImageId = imageIds[1]
 
-  if has == true {
-    _, err := models.Engine.Id(tag.Id).Update(tag)
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Update the tag data error.\""))
-      this.StopRun()
-    }
-  } else {
-    _, err := models.Engine.Insert(tag)
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Create the tag record error.\""))
-      this.StopRun()
-    }
-  }
+	if has == true {
+		_, err := models.Engine.Id(tag.Id).Update(tag)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Update the tag data error.\""))
+			this.StopRun()
+		}
+	} else {
+		_, err := models.Engine.Insert(tag)
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Create the tag record error.\""))
+			this.StopRun()
+		}
+	}
 
-  //操作正常的输出
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-  this.Ctx.Output.Context.Output.SetStatus(200)
-  this.Ctx.Output.Context.Output.Body([]byte("\"\""))
+	this.Ctx.Output.Context.Output.SetStatus(200)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
 //根据最初上传的 Image 数据和每个 Image 的上传信息确定是否上传成功
 func (this *RepositoryController) PutRepositoryImages() {
 
-  //获取namespace/repository
-  namespace := string(this.Ctx.Input.Param(":namespace"))
-  repository := string(this.Ctx.Input.Param(":repo_name"))
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
 
-  beego.Trace("[Namespace] " + namespace)
-  beego.Trace("[Repository] " + repository)
+	beego.Trace("[Namespace] " + namespace)
+	beego.Trace("[Repository] " + repository)
 
-  repo := &models.Repository{Namespace: namespace, Repository: repository}
-  has, err := models.Engine.Get(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    this.StopRun()
-  }
+	repo := &models.Repository{Namespace: namespace, Repository: repository}
+	has, err := models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		this.StopRun()
+	}
 
-  var size int64
+	var size int64
 
-  if has == false {
-    this.Ctx.Output.Context.Output.SetStatus(404)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
-    this.StopRun()
-  } else {
-    //检查 Repository 的所有 Image Layer 是否都上传完成。
-    var images []map[string]string
-    uploaded := true
-    checksumed := true
+	if has == false {
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+		this.StopRun()
+	} else {
+		//检查 Repository 的所有 Image Layer 是否都上传完成。
+		var images []map[string]string
+		uploaded := true
+		checksumed := true
 
-    json.Unmarshal([]byte(repo.JSON), &images)
+		json.Unmarshal([]byte(repo.JSON), &images)
 
-    for _, i := range images {
-      image := &models.Image{ImageId: i["id"]}
-      has, err := models.Engine.Get(image)
-      if err != nil {
-        this.Ctx.Output.Context.Output.SetStatus(400)
-        this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
-        this.StopRun()
-      }
+		for _, i := range images {
+			image := &models.Image{ImageId: i["id"]}
+			has, err := models.Engine.Get(image)
+			if err != nil {
+				this.Ctx.Output.Context.Output.SetStatus(400)
+				this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
+				this.StopRun()
+			}
 
-      if has == false {
-        this.Ctx.Output.Context.Output.SetStatus(404)
-        this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found image.\""))
-        this.StopRun()
-      } else {
+			if has == false {
+				this.Ctx.Output.Context.Output.SetStatus(404)
+				this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found image.\""))
+				this.StopRun()
+			} else {
 
-        if image.Uploaded == false {
-          uploaded = false
-          break
-        }
+				if image.Uploaded == false {
+					uploaded = false
+					break
+				}
 
-        if image.CheckSumed == false {
-          checksumed = false
-          break
-        }
+				if image.CheckSumed == false {
+					checksumed = false
+					break
+				}
 
-        size += image.Size
-      }
-    }
+				size += image.Size
+			}
+		}
 
-    if uploaded == false {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload not complete, please try again.\""))
-      this.StopRun()
-    }
+		if uploaded == false {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload not complete, please try again.\""))
+			this.StopRun()
+		}
 
-    if checksumed == false {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload checksumed error, please try again.\""))
-      this.StopRun()
-    }
-  }
+		if checksumed == false {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"The image layer upload checksumed error, please try again.\""))
+			this.StopRun()
+		}
+	}
 
-  repo.Uploaded = true
-  _, err = models.Engine.Id(repo.Id).Cols("Uploaded").Update(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository uploaded flag error, please try again.\""))
-    this.StopRun()
-  }
+	repo.Uploaded = true
+	_, err = models.Engine.Id(repo.Id).Cols("Uploaded").Update(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository uploaded flag error, please try again.\""))
+		this.StopRun()
+	}
 
-  repo.CheckSumed = true
-  _, err = models.Engine.Id(repo.Id).Cols("CheckSumed").Update(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository checksumed flag error, please try again.\""))
-    this.StopRun()
-  }
+	repo.CheckSumed = true
+	_, err = models.Engine.Id(repo.Id).Cols("CheckSumed").Update(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository checksumed flag error, please try again.\""))
+		this.StopRun()
+	}
 
-  repo.Size = size
-  _, err = models.Engine.Id(repo.Id).Cols("Size").Update(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository size error, please try again.\""))
-    this.StopRun()
-  }
+	repo.Size = size
+	_, err = models.Engine.Id(repo.Id).Cols("Size").Update(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository size error, please try again.\""))
+		this.StopRun()
+	}
 
-  //操作正常的输出
-  this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	//操作正常的输出
+	this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-  this.Ctx.Output.Context.Output.SetStatus(204)
-  this.Ctx.Output.Context.Output.Body([]byte("\"\""))
+	this.Ctx.Output.Context.Output.SetStatus(204)
+	this.Ctx.Output.Context.Output.Body([]byte("\"\""))
 }
 
 func (this *RepositoryController) GetRepositoryImages() {
 
-  //获取namespace/repository
-  namespace := string(this.Ctx.Input.Param(":namespace"))
-  repository := string(this.Ctx.Input.Param(":repo_name"))
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
 
-  beego.Trace("[Namespace] " + namespace)
-  beego.Trace("[Repository] " + repository)
+	beego.Trace("[Namespace] " + namespace)
+	beego.Trace("[Repository] " + repository)
 
-  //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true} //查询时要求已经是完成上传的 Repository
-  has, err := models.Engine.Get(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    this.StopRun()
-  }
+	//查询 Repository 数据
+	repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true} //查询时要求已经是完成上传的 Repository
+	has, err := models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		this.StopRun()
+	}
 
-  if has == false {
-    this.Ctx.Output.Context.Output.SetStatus(404)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
-    this.StopRun()
-  } else {
+	if has == false {
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+		this.StopRun()
+	} else {
 
-    beego.Trace("[Repository] " + string(repo.Id))
+		beego.Trace("[Repository] " + string(repo.Id))
 
-    //存在 Repository 数据，查询所有的 Tag 数据。
-    tags := make([]models.Tag, 0)
-    err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
+		//存在 Repository 数据，查询所有的 Tag 数据。
+		tags := make([]models.Tag, 0)
+		err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
 
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
-      this.StopRun()
-    }
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
+			this.StopRun()
+		}
 
-    if len(tags) == 0 {
-      this.Ctx.Output.Context.Output.SetStatus(404)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
-      this.StopRun()
-    }
+		if len(tags) == 0 {
+			this.Ctx.Output.Context.Output.SetStatus(404)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
+			this.StopRun()
+		}
 
-    //根据 Tag 的 Image ID 值查询 ParentJSON 数据，然后同一在一个数组里面去重。
-    var images []string
-    for _, tag := range tags {
-      image := &models.Image{ImageId: tag.ImageId}
-      has, err := models.Engine.Get(image)
+		//根据 Tag 的 Image ID 值查询 ParentJSON 数据，然后同一在一个数组里面去重。
+		var images []string
+		for _, tag := range tags {
+			image := &models.Image{ImageId: tag.ImageId}
+			has, err := models.Engine.Get(image)
 
-      if has == false || err != nil {
-        this.Ctx.Output.Context.Output.SetStatus(400)
-        this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
-        this.StopRun()
-      }
+			if has == false || err != nil {
+				this.Ctx.Output.Context.Output.SetStatus(400)
+				this.Ctx.Output.Context.Output.Body([]byte("\"Search image error.\""))
+				this.StopRun()
+			}
 
-      if has == true {
-        var parents []string
+			if has == true {
+				var parents []string
 
-        beego.Trace(string(image.Id) + ":\n" + image.ParentJSON)
+				beego.Trace(string(image.Id) + ":\n" + image.ParentJSON)
 
-        if err := json.Unmarshal([]byte(image.ParentJSON), &parents); err != nil {
-          this.Ctx.Output.Context.Output.SetStatus(400)
-          this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
-          this.StopRun()
-        }
-        images = append(parents, images...)
-      }
-    }
+				if err := json.Unmarshal([]byte(image.ParentJSON), &parents); err != nil {
+					this.Ctx.Output.Context.Output.SetStatus(400)
+					this.Ctx.Output.Context.Output.Body([]byte("\"Decode the parent image json data encouter error.\""))
+					this.StopRun()
+				}
+				images = append(parents, images...)
+			}
+		}
 
-    utils.RemoveDuplicateString(&images)
+		utils.RemoveDuplicateString(&images)
 
-    //转换为 map 的对象返回
-    var results []map[string]string
-    for _, value := range images {
-      result := make(map[string]string)
-      result["id"] = value
-      results = append(results, result)
-    }
+		//转换为 map 的对象返回
+		var results []map[string]string
+		for _, value := range images {
+			result := make(map[string]string)
+			result["id"] = value
+			results = append(results, result)
+		}
 
-    imageIds, _ := json.Marshal(results)
+		imageIds, _ := json.Marshal(results)
 
-    beego.Trace("Image ID:" + string(imageIds))
+		beego.Trace("Image ID:" + string(imageIds))
 
-    //操作正常的输出
-    this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-    this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
+		//操作正常的输出
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
 
-    this.Ctx.Output.Context.Output.SetStatus(200)
-    this.Ctx.Output.Context.Output.Body(imageIds)
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body(imageIds)
 
-  }
+	}
 }
 
 func (this *RepositoryController) GetRepositoryTags() {
 
-  //获取namespace/repository
-  namespace := string(this.Ctx.Input.Param(":namespace"))
-  repository := string(this.Ctx.Input.Param(":repo_name"))
+	//获取namespace/repository
+	namespace := string(this.Ctx.Input.Param(":namespace"))
+	repository := string(this.Ctx.Input.Param(":repo_name"))
 
-  beego.Trace("[Namespace] " + namespace)
-  beego.Trace("[Repository] " + repository)
+	beego.Trace("[Namespace] " + namespace)
+	beego.Trace("[Repository] " + repository)
 
-  //查询 Repository 数据
-  repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true}
-  has, err := models.Engine.Get(repo)
-  if err != nil {
-    this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
-    this.StopRun()
-  }
+	//查询 Repository 数据
+	repo := &models.Repository{Namespace: namespace, Repository: repository, Uploaded: true, CheckSumed: true}
+	has, err := models.Engine.Get(repo)
+	if err != nil {
+		this.Ctx.Output.Context.Output.SetStatus(400)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Search repository error.\""))
+		this.StopRun()
+	}
 
-  if has == false {
+	if has == false {
 
-    this.Ctx.Output.Context.Output.SetStatus(404)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
-    this.StopRun()
+		this.Ctx.Output.Context.Output.SetStatus(404)
+		this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
+		this.StopRun()
 
-  } else {
+	} else {
 
-    beego.Trace("[Repository] " + string(repo.Id))
+		beego.Trace("[Repository] " + string(repo.Id))
 
-    //存在 Repository 数据，查询所有的 Tag 数据。
-    tags := make([]models.Tag, 0)
-    err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
+		//存在 Repository 数据，查询所有的 Tag 数据。
+		tags := make([]models.Tag, 0)
+		err := models.Engine.Where("repository_id= ?", repo.Id).Find(&tags)
 
-    if err != nil {
-      this.Ctx.Output.Context.Output.SetStatus(400)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
-      this.StopRun()
-    }
+		if err != nil {
+			this.Ctx.Output.Context.Output.SetStatus(400)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Search repository tag error.\""))
+			this.StopRun()
+		}
 
-    if len(tags) == 0 {
-      this.Ctx.Output.Context.Output.SetStatus(404)
-      this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
-      this.StopRun()
-    }
+		if len(tags) == 0 {
+			this.Ctx.Output.Context.Output.SetStatus(404)
+			this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found any tag.\""))
+			this.StopRun()
+		}
 
-    results := make(map[string]string)
-    for _, v := range tags {
-      results[v.Name] = v.ImageId
-    }
+		results := make(map[string]string)
+		for _, v := range tags {
+			results[v.Name] = v.ImageId
+		}
 
-    result, _ := json.Marshal(results)
+		result, _ := json.Marshal(results)
 
-    beego.Trace("Tags: " + string(result))
+		beego.Trace("Tags: " + string(result))
 
-    //操作正常的输出
-    this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
-    this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
+		//操作正常的输出
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.Ctx.Output.Context.ResponseWriter.Header().Set("X-Docker-Endpoints", utils.Cfg.MustValue("docker", "Endpoints"))
 
-    this.Ctx.Output.Context.Output.SetStatus(200)
-    this.Ctx.Output.Context.Output.Body(result)
-  }
+		this.Ctx.Output.Context.Output.SetStatus(200)
+		this.Ctx.Output.Context.Output.Body(result)
+	}
 }
