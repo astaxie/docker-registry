@@ -181,6 +181,9 @@ func (this *ImageController) PutImageLayer() {
 
   //写入 Layer 文件
   data, _ := ioutil.ReadAll(this.Ctx.Request.Body)
+
+  beego.Trace("[Size] " + strconv.Itoa(len(data)) + " byte")
+
   err = ioutil.WriteFile(layerfile, data, 0777)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
@@ -194,6 +197,14 @@ func (this *ImageController) PutImageLayer() {
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"Update the image upload status error.\"}"))
+    this.StopRun()
+  }
+
+  image.Size = int64(len(data))
+  _, err = models.Engine.Id(image.Id).Cols("Size").Update(image)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(404)
+    this.Ctx.Output.Context.Output.Body([]byte("{\"error\": \"Update the image size error.\"}"))
     this.StopRun()
   }
 

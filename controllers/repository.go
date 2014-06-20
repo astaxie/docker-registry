@@ -262,6 +262,8 @@ func (this *RepositoryController) PutRepositoryImages() {
     this.StopRun()
   }
 
+  var size int64
+
   if has == false {
     this.Ctx.Output.Context.Output.SetStatus(404)
     this.Ctx.Output.Context.Output.Body([]byte("\"Cloud not found repository.\""))
@@ -298,6 +300,8 @@ func (this *RepositoryController) PutRepositoryImages() {
           checksumed = false
           break
         }
+
+        size += image.Size
       }
     }
 
@@ -326,7 +330,15 @@ func (this *RepositoryController) PutRepositoryImages() {
   _, err = models.Engine.Id(repo.Id).Cols("CheckSumed").Update(repo)
   if err != nil {
     this.Ctx.Output.Context.Output.SetStatus(400)
-    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository uploaded flag error, please try again.\""))
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository checksumed flag error, please try again.\""))
+    this.StopRun()
+  }
+
+  repo.Size = size
+  _, err = models.Engine.Id(repo.Id).Cols("Size").Update(repo)
+  if err != nil {
+    this.Ctx.Output.Context.Output.SetStatus(400)
+    this.Ctx.Output.Context.Output.Body([]byte("\"Update the repository size error, please try again.\""))
     this.StopRun()
   }
 
